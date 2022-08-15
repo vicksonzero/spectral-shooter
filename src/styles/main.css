@@ -1,0 +1,151 @@
+html,
+body {
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  font-family: sans-serif;
+}
+
+body {
+  background: #fff;
+}
+
+.container {
+  width: 720px;
+  height: 100%;
+  margin: 0 auto;
+  padding: 1em;
+  box-sizing: border-box;
+}
+
+#game {
+  width: 720px;
+  height: 480px;
+  position: relative;
+}
+#a {
+  position: absolute;
+  width: 720px;
+  height: 480px;
+  background: #c96;
+}
+#h {
+  position: absolute;
+  display: flex;
+  flex-direction: row;
+  flex-flow: wrap;
+  align-content: start;
+  padding: 12px;
+}
+#p,
+#t,
+#m,
+#td,
+#end {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  color: #fff;
+  padding: 12px;
+  box-sizing: border-box;
+}
+
+#end {
+  flex-direction: column;
+  justify-content: center;
+  align-content: center;
+  text-align: center;
+  background: rgba(0, 0, 0, 0.5);
+}
+
+#m {
+  right: 0;
+  width: 200px;
+  height: 40px;
+  background: rgba(0, 0, 0, 0.5);
+  text-align: right;
+}
+#ex-note {
+  display: none;
+  color: gold;
+}
+#list,
+#tList,
+#dList {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  flex-flow: wrap;
+}
+#tList > div,
+#dList > div {
+  font-size: 13px;
+  text-align: center;
+}
+.card {
+  width: 50px;
+  height: 65px;
+  border: 1px black solid;
+  background: #fff;
+  color: #000;
+  margin: 1px;
+  text-align: center;
+  font-size: 13px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  user-select: none;
+  box-sizing: border-box;
+}
+#hBtn{
+  width: 100px;
+}
+.card.hd {
+  border: 3px black solid;
+}
+.card i {
+  font-size: 20px;
+  font-style: normal;
+}
+.c-0 {
+  background: #e55;
+}
+.c-1 {
+  background: #ff8;
+}
+.c-2 {
+  background: #8e8;
+}
+.c-3 {
+  background: #9ff;
+}
+.c-i1 {
+  background: #fff;
+}
+#h .card {
+  width: 30px;
+  height: 40px;
+  /* border: 1px black solid; */
+  margin-right: 2px;
+}
+
+.card.out {
+  animation: slideIn 1s ease-out both reverse;
+}
+
+.card.in {
+  animation: slideIn 1s ease-out both;
+}
+
+@keyframes slideIn {
+  from {
+    transform: scale(1.6) translate(10px, 30px) rotate(40deg);
+    opacity: 0;
+  }
+
+  to {
+    transform: none;
+    opacity: 1;
+  }
+}
