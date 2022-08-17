@@ -20,9 +20,13 @@ module.exports = {
                 ]
             },
             {
-                test: /\.(jpe?g|png|ttf|eot|svg|woff(2)?)(\?[a-z0-9=&.]+)?$/,
-                use: 'base64-inline-loader?limit=1000&name=[name].[ext]'
+                test: /\.(png|jpg|gif|svg)$/i,
+                type: 'asset/inline',
             },
+            // {
+            //     test: /\.(jpe?g|png|ttf|eot|svg|woff(2)?)(\?[a-z0-9=&.]+)?$/,
+            //     use: 'base64-inline-loader?limit=1000&name=[name].[ext]'
+            // },
             {
                 test: isProduction ? /\.js$/ : /^\s+$/,
                 enforce: 'pre',

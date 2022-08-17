@@ -5,40 +5,52 @@ Made for the js13k game jam 2022
 
 
 
+# Credits
+
+- Kenney.nl !!!!
+- Kontra.js
+- Webpack
+
 
 # Roadmap
 
 ## Milestone 1 (Code)
 
 Assets
-- kenney 1-bit sprite for a start
-- use kontra.js for minimal library
-- use 8-bit sound effects
+- [x] kenney 1-bit sprite for a start
+- [x] use kontra.js for minimal library
+- [] use 8-bit sound effects
 
 Language
-- use esm + not-ts + webpack5
-- use base64 for images. no loading
-- use zipping and counting
+- [x] use esm + not-ts + webpack5
+- [x] use base64 for images. no loading
+- [x] use zipping and size-counting
 
 ## Milestone 2 (Art)
-- Render 2 scenes, 1 for physical, 1 for spectral;
-- Tune colors
+- [x] Render 2 scenes, 1 for physical, 1 for spectral;
+- [x] Tune colors
 
 ## Milestone 3 (Game Mechanics)
-- WASD, shoot machine gun with mouse
-- basic enemy, turn into ghost, ghost turns back into basic enemy
-- shoot enemy, melee ghost
-- enemy shoots, kills player in 1 shot
-- death transitions
+- [x] WASD, shoot machine gun with mouse
+- [] basic enemy, turn into ghost, ghost turns back into basic enemy
+- [] shoot enemy, melee ghost
+- [] enemy shoots, kills player in 1 shot
+- [] death transitions
 
 ## Milestone 4 (Game Rules)
 - Wave 1, GameOver, Basic Stats
 - UI for spectral populations (needed vs available)
+- Tutorial (text and triggers)
 - Score, multiplier, timer
 - Wave 5 with Shielded as boss
 
-## Milestone 5 (Content)
+## Content 1
 - dual pistol and machine gun
+- Weapon pickups linked to the scores
 
 
 ## Public testing
+
+
+## Content 2
+Arena transition
