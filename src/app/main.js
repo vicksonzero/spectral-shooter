@@ -25,12 +25,34 @@ import { loadImages } from './images';
 let currentDimension = 0; // 0=physical, 1=spectral
 let dimensionAlpha = 0; // 0=physical, 1=spectral
 
+let score = 0;
+let scoreMultiplier = 1;
+let scoreMultiplierNextTick = 0;
+
+// 0=none
+// 1=dual pistol (low spray)
+// 2=machine gun (mid spray)
+// 3=shotgun (no spray)
+// 4=dual uzi (no spray)
+// 5=minigun (mid spray)
+// 6=spread gun (no spray)
+// 7=rocket (no spray)
+// 8=nuke (no spray)
+let mainWeapon = 1;
+let gunSide = 1; // 0, 1
+
+// 0=Spirit Dash
+// 1=Spectral Revolver
+let subWeapon = 0;
+
 
 (async () => {
     // loading
     const images = await loadImages();
     // init
     let { canvas, context } = init();
+
+    context.imageSmoothingEnabled = false;
     // this function must be called first before pointer
     // functions will work
     initPointer();
@@ -67,7 +89,7 @@ let dimensionAlpha = 0; // 0=physical, 1=spectral
         // custom properties
         team: 0, // 0=player, 1=enemy
         images: [images.playerOrange, images.playerLightGray],
-        speed: 3,
+        speed: 1.5,
         nextCanShoot: Date.now(),
         dimension: 0, // 0=physical, 1=spectral
         frontRotation: 0,
@@ -140,7 +162,7 @@ let dimensionAlpha = 0; // 0=physical, 1=spectral
             anchor: { x: 0.5, y: 0.5 },
 
             // custom properties
-            hp: 3,
+            hp: 5,
             images: [images.basicEnemyGray, images.basicEnemyDarkGray],
             dimension: 0,
             b: 'dw<.',
@@ -214,6 +236,7 @@ let dimensionAlpha = 0; // 0=physical, 1=spectral
             console.log('collision');
             entity.hp -= 1;
             if (entity.hp <= 0) {
+                score += 10 * scoreMultiplier;
                 entity.ttl = 0;
                 entity.onDeathSpawn?.();
             }
@@ -399,25 +422,30 @@ let dimensionAlpha = 0; // 0=physical, 1=spectral
 
             const pointer = getPointer();
             const rotation = angleToTarget(player, pointer) - Math.PI / 2;
-            player.frontRotation = lerpRadians(player.frontRotation, rotation, 0.1);
-
+            const keyboardRotation = Math.atan2(
+                input.u ? -1 : input.d ? +1 : 0,
+                input.l ? -1 : input.r ? +1 : 0
+            );
+            if (input.u || input.d || input.l || input.r) {
+                player.frontRotation = lerpRadians(player.frontRotation, keyboardRotation, 0.1);
+            }
             if (player.dimension == 1) {
-                player.dx = Math.cos(player.frontRotation) * player.speed;
-                player.dy = Math.sin(player.frontRotation) * player.speed;
+                player.dx = Math.cos(player.frontRotation) * player.speed * 2;
+                player.dy = Math.sin(player.frontRotation) * player.speed * 2;
             } else {
                 player.dy = input.u ? -player.speed : input.d ? +player.speed : 0;
                 player.dx = input.l ? -player.speed : input.r ? +player.speed : 0;
             }
 
             if (pointerPressed('left') && Date.now() >= player.nextCanShoot) {
-                if (player.dimension == 0) {
+                if (mainWeapon == 1 && player.dimension == 0) { // dual pistol
                     const bulletSpeed = 20;
                     const bullet = playerBulletPool.get({
                         // #IfDev
                         name: 'bullet',
                         // #EndIfDev
-                        x: player.x,               // starting x,y position of the sprite
-                        y: player.y,
+                        x: player.x + Math.cos(rotation + gunSide * 0.4) * 12,               // starting x,y position of the sprite
+                        y: player.y + Math.sin(rotation + gunSide * 0.4) * 12,
                         color: colors.gray,  // fill color of the sprite rectangle
                         width: 8,           // width and height of the sprite rectangle
                         height: 2,
@@ -431,7 +459,8 @@ let dimensionAlpha = 0; // 0=physical, 1=spectral
                         dimension: player.dimension,
                         bulletSpeed,
                     });
-                    player.nextCanShoot = Date.now() + 300;
+                    gunSide = -gunSide;
+                    player.nextCanShoot = Date.now() + 200;
                 }
             }
 
@@ -499,7 +528,9 @@ let dimensionAlpha = 0; // 0=physical, 1=spectral
             context.stroke();
             context.restore();
 
-
+            // score
+            context.fillStyle = currentDimension ? colors.white : colors.black;
+            context.fillText(score, 10, 10);
         }
     });
 
