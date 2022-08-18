@@ -33,7 +33,7 @@ Language
 ## Milestone 3 (Game Mechanics)
 - [x] WASD, shoot machine gun with mouse
 - [x] basic enemy, turn into ghost, ghost turns back into basic enemy
-- [ ] shoot enemy, melee ghost
+- [x] shoot enemy, melee ghost
 - [ ] enemy shoots, kills player in 1 shot
 - [ ] death transitions
 

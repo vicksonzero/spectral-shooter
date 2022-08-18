@@ -2,7 +2,7 @@
 import {
     /* system */ init, Sprite, GameLoop, Pool,
     /* mouse  */ initPointer, track, getPointer, pointerPressed,
-    /* maths  */ angleToTarget, clamp, movePoint
+    /* maths  */ angleToTarget, clamp, movePoint, lerp
 } from 'kontra';
 import { colors } from './colors';
 
@@ -11,11 +11,13 @@ import { loadImages } from './images';
 /**
  * behaviours:
  * w=walk(strafeDistance, speed, targetX, targetY), // infinite aggro range
- * <=chase, // chase at speed of 1
- * >=avoid, // avoid at speed of 1
+ * <=chase,  // chase at speed of 1
+ * >=avoid,  // avoid at speed of 1
  * .=wander, // wander at speed of 0.2
- * d=solid, // push entities away from radius (width/2)
- * m=melee, // does knockback on both sides
+ * d=solid,  // try not to collide with others
+ * D=static, // stops others from hitting
+ * W=wall,   // static, plus absorbs bullets
+ * m=melee,  // does knockback on both sides
  * s=shooty(spellCard),
  */
 
@@ -68,6 +70,7 @@ let dimensionAlpha = 0; // 0=physical, 1=spectral
         speed: 3,
         nextCanShoot: Date.now(),
         dimension: 0, // 0=physical, 1=spectral
+        frontRotation: 0,
     });
     entities.push(player);
 
@@ -80,14 +83,44 @@ let dimensionAlpha = 0; // 0=physical, 1=spectral
             }
         },
         render() {
+            const progress = this.untilTime - Date.now();
+            if (progress < 0) return;
             context.strokeStyle = 'purple';
             context.lineWidth = 1;
             context.beginPath();
-            context.arc(this.x, this.y, this.r * (this.untilTime - Date.now()) / this.length, 0, 2 * Math.PI);
+            context.arc(this.x, this.y, this.r * progress / this.length, 0, 2 * Math.PI);
             context.stroke();
         },
 
     };
+
+    function lerpRadians(a, b, lerpFactor)// Lerps from angle a to b (both between 0.f and 2*Math.PI), taking the shortest path
+    {
+        let result;
+        let diff = b - a;
+        if (diff < -Math.PI) {
+            // lerp upwards past 2*Math.PI
+            b += 2 * Math.PI;
+            result = lerp(a, b, lerpFactor);
+            if (result >= 2 * Math.PI) {
+                result -= 2 * Math.PI;
+            }
+        }
+        else if (diff > Math.PI) {
+            // lerp downwards past 0
+            b -= 2 * Math.PI;
+            result = lerp(a, b, lerpFactor);
+            if (result < 0) {
+                result += 2 * Math.PI;
+            }
+        }
+        else {
+            // straight lerp
+            result = lerp(a, b, lerpFactor);
+        }
+
+        return result;
+    }
     function randomUnitVector() {
         const rotation = Math.random() * 2 * Math.PI;
         return {
@@ -110,7 +143,7 @@ let dimensionAlpha = 0; // 0=physical, 1=spectral
             hp: 3,
             images: [images.basicEnemyGray, images.basicEnemyDarkGray],
             dimension: 0,
-            b: 'w<.',
+            b: 'dw<.',
             onDeathSpawn() { spawnSpectralFire.call(this, randomUnitVector()); },
             targetX: this.x,
             targetY: this.y,
@@ -164,6 +197,8 @@ let dimensionAlpha = 0; // 0=physical, 1=spectral
             targetX: this.x,
             targetY: this.y,
             aiNextTick: Date.now(),
+            returnHp: 60 * 20,
+            spawnEntity: spawnBasicEnemy,
         });
         // entity.x = this.x - entity.width / 2;
         // entity.y = this.y - entity.height / 2;
@@ -286,6 +321,8 @@ let dimensionAlpha = 0; // 0=physical, 1=spectral
                 ...enemyBullets
             ].forEach(e => {
                 e.image = e.images?.[currentDimension] ?? e.image;
+
+                // knockback ticks
                 if (e.knockDx) {
                     e.x += e.knockDx;
                     e.knockDx *= 0.85;
@@ -295,6 +332,8 @@ let dimensionAlpha = 0; // 0=physical, 1=spectral
                     e.y += e.knockDy;
                     e.knockDy *= 0.85;
                 }
+
+                // targeting: chase, avoid, wander
                 if (e.targetX != null) {
                     if (Date.now() > e.aiNextTick) {
                         // choose target
@@ -325,9 +364,31 @@ let dimensionAlpha = 0; // 0=physical, 1=spectral
                         e.y += (e.targetY - e.y) / dist * e.speed;
                     }
                 }
+
+                if (e.returnHp) {
+                    e.hp++;
+                    if (e.hp >= e.returnHp) {
+                        e.spawnEntity();
+                        e.ttl = 0;
+                    }
+                }
                 e.update();
 
 
+                // collision
+                const collisions = entities.filter(entity => entity != e && Math.hypot(e.x - entity.x, e.y - entity.y) < entity.width / 2 + e.width / 2);
+                if (player.dimension == 1 && collisions.some(entity => entity == player) && e.returnHp) {
+                    // kill spectral fire
+                    e.ttl = 0;
+                }
+                if (e != player && collisions.length) {
+                    const closest = collisions[0];
+                    const dist = Math.hypot(e.x - closest.x, e.y - closest.y);
+                    if (dist > 0.01) {
+                        e.x += (e.x - closest.x) / dist * 0.1;
+                        e.y += (e.y - closest.y) / dist * 0.1;
+                    }
+                }
                 if (e.x - e.width / 2 < 0) e.x = e.width / 2;
                 if (e.x + e.width / 2 > canvas.width) e.x = canvas.width - e.width / 2;
                 if (e.y - e.height / 2 < 0) e.y = e.height / 2;
@@ -335,63 +396,86 @@ let dimensionAlpha = 0; // 0=physical, 1=spectral
             });
             entities = entities.filter(e => e.ttl > 0);
 
-            player.dy = input.u ? -player.speed : input.d ? +player.speed : 0;
-            player.dx = input.l ? -player.speed : input.r ? +player.speed : 0;
 
             const pointer = getPointer();
+            const rotation = angleToTarget(player, pointer) - Math.PI / 2;
+            player.frontRotation = lerpRadians(player.frontRotation, rotation, 0.1);
+
+            if (player.dimension == 1) {
+                player.dx = Math.cos(player.frontRotation) * player.speed;
+                player.dy = Math.sin(player.frontRotation) * player.speed;
+            } else {
+                player.dy = input.u ? -player.speed : input.d ? +player.speed : 0;
+                player.dx = input.l ? -player.speed : input.r ? +player.speed : 0;
+            }
+
             if (pointerPressed('left') && Date.now() >= player.nextCanShoot) {
-                const bulletSpeed = 20;
-                const rotation = angleToTarget(player, pointer) - Math.PI / 2;
-                const bullet = playerBulletPool.get({
-                    // #IfDev
-                    name: 'bullet',
-                    // #EndIfDev
-                    x: player.x,               // starting x,y position of the sprite
-                    y: player.y,
-                    color: colors.gray,  // fill color of the sprite rectangle
-                    width: 8,           // width and height of the sprite rectangle
-                    height: 2,
-                    dx: Math.cos(rotation) * bulletSpeed,
-                    dy: Math.sin(rotation) * bulletSpeed,
-                    rotation,
-                    ttl: 3000,
-                    anchor: { x: 0.5, y: 0.5 },
-                    update: bulletUpdate,
-                    // custom properties
-                    dimension: player.dimension,
-                    bulletSpeed,
-                });
-                player.nextCanShoot = Date.now() + 300;
+                if (player.dimension == 0) {
+                    const bulletSpeed = 20;
+                    const bullet = playerBulletPool.get({
+                        // #IfDev
+                        name: 'bullet',
+                        // #EndIfDev
+                        x: player.x,               // starting x,y position of the sprite
+                        y: player.y,
+                        color: colors.gray,  // fill color of the sprite rectangle
+                        width: 8,           // width and height of the sprite rectangle
+                        height: 2,
+                        dx: Math.cos(rotation) * bulletSpeed,
+                        dy: Math.sin(rotation) * bulletSpeed,
+                        rotation,
+                        ttl: 3000,
+                        anchor: { x: 0.5, y: 0.5 },
+                        update: bulletUpdate,
+                        // custom properties
+                        dimension: player.dimension,
+                        bulletSpeed,
+                    });
+                    player.nextCanShoot = Date.now() + 300;
+                }
             }
 
         },
         render() { // render the game state
-
+            // background
             context.fillStyle = colors.bgOrange;
             context.fillRect(0, 0, canvas.width, canvas.height);
             const gradient = context.createRadialGradient(
                 canvas.width / 2, canvas.height / 2, 30,
                 canvas.width / 2, canvas.height / 2, 300);
-            // Add three color stops
             gradient.addColorStop(0, colors.darkBlue);
             gradient.addColorStop(1, colors.black);
 
+            // background fade-in-out
             if (Math.abs(currentDimension - dimensionAlpha) <= 0.05) {
                 dimensionAlpha = currentDimension;
             } else {
                 dimensionAlpha += Math.sign(currentDimension - dimensionAlpha) * 0.05;
             }
 
+            // spectral background
             context.fillStyle = gradient;
             context.globalAlpha = dimensionAlpha; // FIXME: alpha does not work with firefox https://bugzilla.mozilla.org/show_bug.cgi?id=1164912
             context.fillRect(0, 0, canvas.width, canvas.height);
             context.globalAlpha = 1;
+            // render all entities
             [
                 ...portals,
                 ...entities,
                 playerBulletPool,
                 ...enemyBullets
-            ].forEach(e => e.render());
+            ].forEach(e => {
+                e.render();
+
+                // draw a bar for respawning spectral entities
+                if (e.returnHp) {
+                    context.fillStyle = colors.gray;
+                    context.globalAlpha = 0.3;
+                    context.fillRect(e.x - e.width / 2, e.y + 12, e.width, 2);
+                    context.globalAlpha = 1;
+                    context.fillRect(e.x - e.width / 2, e.y + 12, e.width * e.hp / e.returnHp, 2);
+                }
+            });
 
             const pointer = getPointer();
             const xx = player.x;
@@ -403,11 +487,19 @@ let dimensionAlpha = 0; // 0=physical, 1=spectral
             context.strokeStyle = currentDimension ? colors.blue : colors.orange;
             context.lineWidth = 1;
             context.globalAlpha = 0.3;
+
             context.beginPath();
             context.moveTo(xx, yy);
             context.lineTo(xx + aimX * 100, yy + aimY * 100);
             context.stroke();
+
+            context.beginPath();
+            context.moveTo(xx, yy);
+            context.lineTo(xx + Math.cos(player.frontRotation) * 16, yy + Math.sin(player.frontRotation) * 16);
+            context.stroke();
             context.restore();
+
+
         }
     });
 
