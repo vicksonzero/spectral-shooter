@@ -45,7 +45,8 @@ Language
 - [ ] Wave 5 with Shielded as boss
 
 ## Content 1
-- [ ] dual pistol and machine gun
+- [x] dual pistol
+- [ ] machine gun
 - [ ] Weapon pickups linked to the scores
 
 
