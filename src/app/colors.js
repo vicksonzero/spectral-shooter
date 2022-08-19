@@ -1,7 +1,7 @@
 
 export const colors = {
-    orange: '#DD6C03',
-    brightOrange: '#FDA418',
+    darkOrange: '#DD6C03',
+    orange: '#FDA418',
     bgOrange: '#f4dfc2', // '#B19D82', 
     blue: '#3A82EB',
     darkBlue: '#120656',

@@ -29,6 +29,8 @@ let score = 0;
 let scoreMultiplier = 1;
 let scoreMultiplierNextTick = 0;
 
+let nextSpawnTick = -1;
+
 // 0=none
 // 1=dual pistol (low spray)
 // 2=machine gun (mid spray)
@@ -150,6 +152,12 @@ let subWeapon = 0;
             y: Math.sin(rotation),
         }
     }
+    function dist(a, b) { // not using it saves more space ?!
+        return Math.hypot(a.x - b.x, a.y - b.y);
+    }
+    function hasCircleCollisionWith(a, b) { // not using it saves more space ?!
+        return dist(a, b) < b.width / 2 + a.width / 2;
+    }
     function spawnBasicEnemy() {
         console.log('spawnBasicEnemy', this.x, this.y);
         const entity = Sprite({
@@ -226,6 +234,31 @@ let subWeapon = 0;
         // entity.y = this.y - entity.height / 2;
         entities.push(entity);
     }
+
+    function spawnWithPortal(spawnEntity, { x, y }) {
+        portals.push({
+            // #IfDev
+            name: 'portal',
+            // #EndIfDev
+            x,
+            y,
+            untilTime: Date.now() + 2000,
+            ...portalPrototype,
+            spawnEntity,
+        });
+    }
+
+    function HandleSpawnTick() {
+        if (nextSpawnTick == -1 || nextSpawnTick > Date.now()) return;
+
+        const x = Math.random() * (canvas.width - 100) + 50;
+        const y = Math.random() * (canvas.height - 100) + 50;
+        const spawnWidth = 64;
+
+        if (!entities.some(entity => Math.hypot(x - entity.x, y - entity.y) < entity.width / 2 + spawnWidth / 2)) {
+            spawnWithPortal(spawnBasicEnemy, { x, y });
+        }
+    }
     function bulletUpdate(dt) {
         this.advance(dt);
         const entity = entities
@@ -241,40 +274,22 @@ let subWeapon = 0;
                 entity.onDeathSpawn?.();
             }
             this.ttl = 0;
+
         }
     }
 
-    portals.push({
-        // #IfDev
-        name: 'portal',
-        // #EndIfDev
+    spawnWithPortal(spawnBasicEnemy, {
         x: 200,
         y: 200,
-        untilTime: Date.now() + 2000,
-        ...portalPrototype,
-        spawnEntity: spawnBasicEnemy,
     });
-    portals.push({
-        // #IfDev
-        name: 'portal',
-        // #EndIfDev
+    spawnWithPortal(spawnBasicEnemy, {
         x: 250,
         y: 200,
-        untilTime: Date.now() + 2000,
-        ...portalPrototype,
-        spawnEntity: spawnBasicEnemy,
     });
-    portals.push({
-        // #IfDev
-        name: 'portal',
-        // #EndIfDev
+    spawnWithPortal(spawnBasicEnemy, {
         x: 250,
         y: 100,
-        untilTime: Date.now() + 2000,
-        ...portalPrototype,
-        spawnEntity: spawnSpectralFire,
     });
-
 
     // Inputs (see https://xem.github.io/articles/jsgamesinputs.html)
     const input = {
@@ -464,6 +479,8 @@ let subWeapon = 0;
                 }
             }
 
+            HandleSpawnTick();
+
         },
         render() { // render the game state
             // background
@@ -513,7 +530,7 @@ let subWeapon = 0;
             const aimY = pointer.y - yy;
 
             context.save();
-            context.strokeStyle = currentDimension ? colors.blue : colors.orange;
+            context.strokeStyle = currentDimension ? colors.blue : colors.darkOrange;
             context.lineWidth = 1;
             context.globalAlpha = 0.3;
 

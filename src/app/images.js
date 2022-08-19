@@ -5,13 +5,16 @@ import { colors } from './colors'
 
 export async function loadImages() {
     return Promise.all([
-        createImageAsync('basicEnemyOrange', imageList.tile028, colors.orange),
+        createImageAsync('basicEnemyOrange', imageList.tile028, colors.darkOrange),
         createImageAsync('basicEnemyGray', imageList.tile028, colors.gray),
         createImageAsync('basicEnemyDarkGray', imageList.tile028, colors.darkGray),
-        createImageAsync('playerOrange', imageList.tile077, colors.orange),
+        createImageAsync('playerOrange', imageList.tile077, colors.darkOrange),
         createImageAsync('playerLightGray', imageList.tile077, colors.lightGray),
         createImageAsync('spectralFireBlue', imageList.tile505, colors.blue),
         createImageAsync('spectralFireLightGray', imageList.tile505, colors.lightGray),
+        createImageAsync('boxWhite', imageList.tile505, colors.lightGray),
+        createImageAsync('boxDarkGray', imageList.tile505, colors.lightGray),
+        createImageAsync('dualPistolOrange', imageList.tile505, colors.darkOrange),
     ])
         .then(entries => Object.fromEntries(entries));
 }
