@@ -55,7 +55,9 @@ Language
 
 ## Content 2
 - [ ] Arena transition
-
+- [ ] Fill the rest of the game with juice
+- [ ] Enemies
+- [ ] Guns
 
 ## Minimize
 

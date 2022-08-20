@@ -1,10 +1,9 @@
 
-// bash$ find ./src -iname "*.png"
+// find ./src -iname "*.png" | sed -r -e 's/.\/src\/assets\/(.+?\/)(.+?)\.png/export { default as \2 } from '"'"'..\/assets\/\1\2.png'"'"'/'
 export { default as tile028 } from '../assets/characters/tile028.png'
 export { default as tile077 } from '../assets/characters/tile077.png'
 export { default as tile505 } from '../assets/characters/tile505.png'
 export { default as tile567 } from '../assets/characters/tile567.png'
-
 export { default as tile001 } from '../assets/foliage/tile001.png'
 export { default as tile002 } from '../assets/foliage/tile002.png'
 export { default as tile003 } from '../assets/foliage/tile003.png'

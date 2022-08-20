@@ -3,6 +3,7 @@ import {
     /* system */ init, Sprite, GameLoop, Pool,
     /* mouse  */ initPointer, track, getPointer, pointerPressed,
     /* maths  */ angleToTarget, clamp, movePoint, lerp
+    /* Vector is imported through Sprite, GameObject, Updatable */
 } from 'kontra';
 import { colors } from './colors';
 
@@ -21,6 +22,30 @@ import { loadImages } from './images';
  * s=shooty(spellCard),
  */
 
+const PHYSICAL_DIMENSION = 0;
+const SPECTRAL_DIMENSION = 1;
+
+
+const MAIN_NONE = 0 // none
+const MAIN_DUAL_PISTOL = 1 // dual pistol (low spray)
+const MAIN_MACHINE_GUN = 2 // machine gun (mid spray)
+const MAIN_SHOTGUN = 3 // shotgun (no spray)
+const MAIN_DUAL_UZI = 4 // dual uzi (no spray)
+const MAIN_MINI_GUN = 5 // mini gun (mid spray)
+const MAIN_SPREAD_GUN = 6 // spread gun (no spray)
+const MAIN_ROCKET = 7 // rocket (no spray)
+const MAIN_NUKE = 8 // nuke (no spray)
+
+
+const SUB_SPIRIT_DASH = 0 // Spirit Dash
+const SUB_SPIRIT_REVOLVER = 1 // Spectral Revolver
+
+
+const TEAM_PLAYER = 0;
+const TEAM_ENEMY = 1; // or undefined
+
+
+
 
 let currentDimension = 0; // 0=physical, 1=spectral
 let dimensionAlpha = 0; // 0=physical, 1=spectral
@@ -31,32 +56,32 @@ let scoreMultiplierNextTick = 0;
 
 let nextSpawnTick = -1;
 
-// 0=none
-// 1=dual pistol (low spray)
-// 2=machine gun (mid spray)
-// 3=shotgun (no spray)
-// 4=dual uzi (no spray)
-// 5=minigun (mid spray)
-// 6=spread gun (no spray)
-// 7=rocket (no spray)
-// 8=nuke (no spray)
-let mainWeapon = 1;
+let mainWeapon = MAIN_NONE// MAIN_NONE;
 let gunSide = 1; // 0, 1
 
-// 0=Spirit Dash
-// 1=Spectral Revolver
 let subWeapon = 0;
+
 
 
 (async () => {
     // loading
     const images = await loadImages();
+    const mainWeaponImages = [
+        '',
+        images.dualPistolOrange,
+        images.dualPistolOrange,
+        images.dualPistolOrange,
+    ];
+    const subWeaponImages = [
+        '',
+        images.spiritRevolverBlue,
+    ];
+
+
     // init
     let { canvas, context } = init();
 
     context.imageSmoothingEnabled = false;
-    // this function must be called first before pointer
-    // functions will work
     initPointer();
 
     const blocks = [];
@@ -89,11 +114,11 @@ let subWeapon = 0;
         anchor: { x: 0.5, y: 0.5 },
 
         // custom properties
-        team: 0, // 0=player, 1=enemy
+        team: TEAM_PLAYER, // 0=player, 1=enemy
         images: [images.playerOrange, images.playerLightGray],
         speed: 1.5,
         nextCanShoot: Date.now(),
-        dimension: 0, // 0=physical, 1=spectral
+        dimension: PHYSICAL_DIMENSION, // 0=physical, 1=spectral
         frontRotation: 0,
     });
     entities.push(player);
@@ -172,7 +197,7 @@ let subWeapon = 0;
             // custom properties
             hp: 5,
             images: [images.basicEnemyGray, images.basicEnemyDarkGray],
-            dimension: 0,
+            dimension: PHYSICAL_DIMENSION,
             b: 'dw<.',
             onDeathSpawn() { spawnSpectralFire.call(this, randomUnitVector()); },
             targetX: this.x,
@@ -232,6 +257,53 @@ let subWeapon = 0;
         });
         // entity.x = this.x - entity.width / 2;
         // entity.y = this.y - entity.height / 2;
+        entities.push(entity);
+    }
+
+    function spawnBox(x, y, mainWeapon, subWeapon) {
+        const entity = Sprite({
+            x, y,
+            image: images.boxWhite,
+            mainWeapon,
+            subWeapon,
+            render() {
+                // draw box
+                // @ifdef SPRITE_IMAGE
+                if (this.image) {
+                    context.fillStyle = colors.darkGray;
+                    context.fillRect(0, 0, this.image.width, this.image.height);
+                    context.drawImage(
+                        this.image,
+                        0,
+                        0,
+                        this.image.width,
+                        this.image.height
+                    );
+                }
+                // @endif
+                // draw bounding weapon
+                const amplitude = 1;
+                const yy = Math.sin(Date.now() % 500 / 500 * 2 * Math.PI) * amplitude - 10;
+                if (this.mainWeapon) { // not zero
+                    context.drawImage(
+                        mainWeaponImages[this.mainWeapon],
+                        0,
+                        yy,
+                        this.image.width,
+                        this.image.height
+                    );
+                }
+                if (this.subWeapon) { // not zero
+                    context.drawImage(
+                        subWeaponImages[this.subWeapon],
+                        0,
+                        yy,
+                        this.image.width,
+                        this.image.height
+                    );
+                }
+            },
+        });
         entities.push(entity);
     }
 
@@ -415,7 +487,7 @@ let subWeapon = 0;
 
                 // collision
                 const collisions = entities.filter(entity => entity != e && Math.hypot(e.x - entity.x, e.y - entity.y) < entity.width / 2 + e.width / 2);
-                if (player.dimension == 1 && collisions.some(entity => entity == player) && e.returnHp) {
+                if (player.dimension == SPECTRAL_DIMENSION && collisions.some(entity => entity == player) && e.returnHp) {
                     // kill spectral fire
                     e.ttl = 0;
                 }
@@ -444,7 +516,7 @@ let subWeapon = 0;
             if (input.u || input.d || input.l || input.r) {
                 player.frontRotation = lerpRadians(player.frontRotation, keyboardRotation, 0.1);
             }
-            if (player.dimension == 1) {
+            if (player.dimension == SPECTRAL_DIMENSION) {
                 player.dx = Math.cos(player.frontRotation) * player.speed * 2;
                 player.dy = Math.sin(player.frontRotation) * player.speed * 2;
             } else {
@@ -453,7 +525,7 @@ let subWeapon = 0;
             }
 
             if (pointerPressed('left') && Date.now() >= player.nextCanShoot) {
-                if (mainWeapon == 1 && player.dimension == 0) { // dual pistol
+                if (mainWeapon == MAIN_DUAL_PISTOL && player.dimension == PHYSICAL_DIMENSION) { // dual pistol
                     const bulletSpeed = 20;
                     const bullet = playerBulletPool.get({
                         // #IfDev

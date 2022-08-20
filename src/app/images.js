@@ -4,22 +4,22 @@ import * as imageList from './imageList';
 import { colors } from './colors'
 
 export async function loadImages() {
-    return Promise.all([
-        createImageAsync('basicEnemyOrange', imageList.tile028, colors.darkOrange),
-        createImageAsync('basicEnemyGray', imageList.tile028, colors.gray),
-        createImageAsync('basicEnemyDarkGray', imageList.tile028, colors.darkGray),
-        createImageAsync('playerOrange', imageList.tile077, colors.darkOrange),
-        createImageAsync('playerLightGray', imageList.tile077, colors.lightGray),
-        createImageAsync('spectralFireBlue', imageList.tile505, colors.blue),
-        createImageAsync('spectralFireLightGray', imageList.tile505, colors.lightGray),
-        createImageAsync('boxWhite', imageList.tile505, colors.lightGray),
-        createImageAsync('boxDarkGray', imageList.tile505, colors.lightGray),
-        createImageAsync('dualPistolOrange', imageList.tile505, colors.darkOrange),
-    ])
-        .then(entries => Object.fromEntries(entries));
+    return {
+        basicEnemyOrange: await createImageAsync(imageList.tile028, colors.darkOrange),
+        basicEnemyGray: await createImageAsync(imageList.tile028, colors.gray),
+        basicEnemyDarkGray: await createImageAsync(imageList.tile028, colors.darkGray),
+        playerOrange: await createImageAsync(imageList.tile077, colors.darkOrange),
+        playerLightGray: await createImageAsync(imageList.tile077, colors.lightGray),
+        spectralFireBlue: await createImageAsync(imageList.tile505, colors.blue),
+        spectralFireLightGray: await createImageAsync(imageList.tile505, colors.lightGray),
+        boxWhite: await createImageAsync(imageList.tile121, colors.lightGray),
+        boxDarkGray: await createImageAsync(imageList.tile121, colors.lightGray),
+        dualPistolOrange: await createImageAsync(imageList.tile133, colors.darkOrange),
+        spiritRevolverBlue: await createImageAsync(imageList.tile133, colors.blue),
+    };
 }
 
-async function createImageAsync(key, src, color) {
+async function createImageAsync(src, color) {
     const image = new Image();
     const bufferCanvas = document.createElement('canvas');
 
@@ -41,5 +41,5 @@ async function createImageAsync(key, src, color) {
     btx.globalCompositeOperation = "destination-atop";
     btx.drawImage(image, 0, 0);
 
-    return [key, bufferCanvas];
+    return bufferCanvas;
 }
