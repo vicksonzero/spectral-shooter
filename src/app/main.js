@@ -350,18 +350,19 @@ let subWeapon = 0;
         }
     }
 
-    spawnWithPortal(spawnBasicEnemy, {
-        x: 200,
-        y: 200,
-    });
-    spawnWithPortal(spawnBasicEnemy, {
-        x: 250,
-        y: 200,
-    });
-    spawnWithPortal(spawnBasicEnemy, {
-        x: 250,
-        y: 100,
-    });
+    // spawnWithPortal(spawnBasicEnemy, {
+    //     x: 200,
+    //     y: 200,
+    // });
+    // spawnWithPortal(spawnBasicEnemy, {
+    //     x: 250,
+    //     y: 200,
+    // });
+    // spawnWithPortal(spawnBasicEnemy, {
+    //     x: 250,
+    //     y: 100,
+    // });
+    spawnBox(canvas.width / 2, canvas.height / 2, 1);
 
     // Inputs (see https://xem.github.io/articles/jsgamesinputs.html)
     const input = {
@@ -556,7 +557,7 @@ let subWeapon = 0;
         },
         render() { // render the game state
             // background
-            context.fillStyle = colors.bgOrange;
+            context.fillStyle = colors.darkGray;
             context.fillRect(0, 0, canvas.width, canvas.height);
             const gradient = context.createRadialGradient(
                 canvas.width / 2, canvas.height / 2, 30,

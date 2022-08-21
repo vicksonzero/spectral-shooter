@@ -8,13 +8,13 @@ export async function loadImages() {
         basicEnemyOrange: await createImageAsync(imageList.tile028, colors.darkOrange),
         basicEnemyGray: await createImageAsync(imageList.tile028, colors.gray),
         basicEnemyDarkGray: await createImageAsync(imageList.tile028, colors.darkGray),
-        playerOrange: await createImageAsync(imageList.tile077, colors.darkOrange),
+        playerOrange: await createImageAsync(imageList.tile077, colors.orange),
         playerLightGray: await createImageAsync(imageList.tile077, colors.lightGray),
         spectralFireBlue: await createImageAsync(imageList.tile505, colors.blue),
         spectralFireLightGray: await createImageAsync(imageList.tile505, colors.lightGray),
-        boxWhite: await createImageAsync(imageList.tile121, colors.lightGray),
+        boxWhite: await createImageAsync(imageList.tile121, colors.white),
         boxDarkGray: await createImageAsync(imageList.tile121, colors.lightGray),
-        dualPistolOrange: await createImageAsync(imageList.tile133, colors.darkOrange),
+        dualPistolOrange: await createImageAsync(imageList.tile133, colors.orange),
         spiritRevolverBlue: await createImageAsync(imageList.tile133, colors.blue),
     };
 }
