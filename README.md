@@ -19,7 +19,7 @@ Made for the js13k game jam 2022
 Assets
 - [x] kenney 1-bit sprite for a start
 - [x] use kontra.js for minimal library
-- [ ] use 8-bit sound effects
+- [x] use 8-bit sound effects
 
 Language
 - [x] use esm + not-ts + webpack5
@@ -35,10 +35,11 @@ Language
 - [x] basic enemy, turn into ghost, ghost turns back into basic enemy
 - [x] shoot enemy, melee ghost
 - [ ] enemy shoots, kills player in 1 shot
-- [ ] death transitions
+- [x] death transitions
 
 ## Milestone 4 (Game Rules)
-- [ ] Wave 1, GameOver, Basic Stats
+- [x] Wave 1
+- [ ] GameOver, Basic Stats
 - [ ] UI for spectral populations (needed vs available)
 - [ ] Tutorial (text and triggers)
 - [ ] Score, multiplier, timer

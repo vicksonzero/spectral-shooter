@@ -8,6 +8,7 @@ import {
 import { colors } from './colors';
 
 import { loadImages } from './images';
+import { ArcadeAudio } from './audio';
 
 /**
  * behaviours:
@@ -23,9 +24,14 @@ import { loadImages } from './images';
  * // b=box()     // gives item
  */
 
+const DIFFICULTY_RATIO = 1.618; // GoldenRatio=1.618
+
 const BACKGROUND_COLOR = colors.bgGray;
 const PHYSICAL_DIMENSION = 0;
 const SPECTRAL_DIMENSION = 1;
+const BETWEEN_DIMENSION1 = 2;
+const BETWEEN_DIMENSION2 = 3;
+const BETWEEN_DIMENSION3 = 4;
 
 
 const MAIN_NONE = 0 // none
@@ -53,14 +59,21 @@ const TUT_SHOOT = 'Use mouse to aim, left click to shoot';
 const TUT_ENEMIES = `Enemies can respawn after ${ENEMY_RESPAWN_TIME} seconds`;
 const TUT_SPECTRAL_ATTACK = 'Touch %1% ghost fire to respawn';
 
+const DIMENSION_TRANSITION_LENGTH1 = 500;
+const DIMENSION_TRANSITION_LENGTH2 = 1000;
+const DIMENSION_TRANSITION_LENGTH3 = 1000;
 
 
 let currentDimension = 0; // 0=physical, 1=spectral
+let dimensionTransitionUntil = 0;
 let dimensionAlpha = 0; // 0=physical, 1=spectral
 
 let score = 0;
 let scoreMultiplier = 1;
 let scoreMultiplierNextTick = 0;
+
+let respawnEnergy = 0;
+let respawnEnergyGoal = 5;
 
 let nextSpawnTick = -1;
 
@@ -84,6 +97,8 @@ let subWeapon = 0;
         '',
         images.spiritRevolverBlue,
     ];
+
+    const audio = new ArcadeAudio();
 
 
     // init
@@ -112,7 +127,7 @@ let subWeapon = 0;
         name: 'player',
         // #EndIfDev
         x: canvas.width / 2,        // starting x,y position of the sprite
-        y: canvas.height / 2 + 100,
+        y: canvas.height / 2 + 80,
         // color: 'red',  // fill color of the sprite rectangle
         // width: 20,     // width and height of the sprite rectangle
         // height: 40,
@@ -192,7 +207,7 @@ let subWeapon = 0;
         return dist(a, b) < b.width / 2 + a.width / 2;
     }
     function spawnBasicEnemy() {
-        console.log('spawnBasicEnemy', this.x, this.y);
+        // console.log('spawnBasicEnemy', this.x, this.y);
         const entity = Sprite({
             // #IfDev
             name: 'BasicEnemy',
@@ -281,7 +296,7 @@ let subWeapon = 0;
             speed: 0.2,
             targetX: this.x,
             targetY: this.y,
-            aiNextTick: Date.now(),
+            aiNextTick: Date.now() + 1000,
             returnHp: 60 * ENEMY_RESPAWN_TIME,
             spawnEntity: spawnBasicEnemy,
         });
@@ -298,7 +313,7 @@ let subWeapon = 0;
             subWeapon: _subWeapon,
             update() {
                 if (Math.hypot(player.x - this.x, player.y - this.y) < this.width / 2 + player.width / 2) {
-                    console.log('player collide box');
+                    // console.log('player collect box');
 
                     if (this.mainWeapon) { // not zero
                         mainWeapon = this.mainWeapon;
@@ -308,6 +323,7 @@ let subWeapon = 0;
                     if (this.subWeapon) { // not zero
                         subWeapon = this.subWeapon;
                     }
+                    audio.play('pickup');
                     this.ttl = 0;
                 }
             },
@@ -320,9 +336,11 @@ let subWeapon = 0;
                     // context.fillStyle = colors.blue;
                     // context.fillRect(_x, _y, this.image.width, this.image.height);
                     context.fillStyle = colors.darkGray;
+                    context.globalAlpha = 0.7;
                     context.beginPath();
                     context.ellipse(0, 0 + this.height - 10, 6, 2, 0, 0, Math.PI * 2);
                     context.fill();
+                    context.globalAlpha = 1;
                     // context.drawImage(
                     //     this.image,
                     //     0,
@@ -402,9 +420,11 @@ let subWeapon = 0;
             if (entity.hp <= 0) {
                 score += 10 * scoreMultiplier;
                 entity.ttl = 0;
+                audio.play('explosion');
                 entity.onDeathSpawn?.();
             }
             // destroy bullet
+            audio.play('hit');
             this.ttl = 0;
 
         }
@@ -469,9 +489,7 @@ let subWeapon = 0;
             input.c1 = 0;
         }
         if (input.s && 's' == keyMap[w]) {
-            currentDimension = +(!currentDimension);
-            console.log('currentDimension', currentDimension);
-            player.dimension = currentDimension;
+            audio.play('test');
             input.s = 0;
         }
         // END toggles quick hack
@@ -515,7 +533,7 @@ let subWeapon = 0;
                         if (dist < 100) {
                             e.targetX = e.x + (e.x - player.x) / dist * 100;
                             e.targetY = e.y + (e.y - player.y) / dist * 100;
-                            e.speed = 1;
+                            e.speed = 0.5;
                             e.aiNextTick = Date.now() + 2000;
                         } else if (Date.now() > e.aiNextTick) {
                             const randomVector = randomUnitVector();
@@ -561,22 +579,39 @@ let subWeapon = 0;
                 // if spectral enemy collides spectral player
                 if (enemyCollideWithPlayer && player.dimension == SPECTRAL_DIMENSION && e.returnHp) {
                     // eat ghostFire
+                    audio.play('coin');
+                    respawnEnergy++;
                     e.ttl = 0;
 
                     // add to resurrection energy
                 }
 
                 // if physical enemy collides physical player
-                if (enemyCollideWithPlayer && player.dimension == SPECTRAL_DIMENSION && e.returnHp) {
-                    // kill player
+                if (enemyCollideWithPlayer && player.dimension == PHYSICAL_DIMENSION && e.dimension == PHYSICAL_DIMENSION) {
+                    // kill player into spectral dimension
+
+                    currentDimension = BETWEEN_DIMENSION1;
+                    player.dimension = currentDimension;
+
+                    dimensionAlpha = 0;
+                    dimensionTransitionUntil = Date.now() + DIMENSION_TRANSITION_LENGTH1;
+                    // console.log('currentDimension', currentDimension);
+
+                    player.dx = 0;
+                    player.dy = 0;
+                    respawnEnergy = 0;
+
+                    audio.play('death');
                 }
 
                 // if physical enemy collides spectral player
                 if (enemyCollideWithPlayer && player.dimension == SPECTRAL_DIMENSION && e.dimension == PHYSICAL_DIMENSION) {
                     // damage enemy
+                    audio.play('hit');
                     e.hp -= 3;
                     if (e.hp <= 0) {
                         score += 10 * scoreMultiplier;
+                        audio.play('explosion');
                         e.ttl = 0;
                         e.onDeathSpawn?.();
                     }
@@ -591,9 +626,9 @@ let subWeapon = 0;
                 if (e != player && collisions.length) {
                     const closest = collisions[0];
                     const dist = Math.hypot(e.x - closest.x, e.y - closest.y);
-                    if (dist > 0.001) {
-                        e.x += (e.x - closest.x) / dist * 0.15;
-                        e.y += (e.y - closest.y) / dist * 0.15;
+                    if (dist > 0.01) {
+                        e.x += (e.x - closest.x) / dist * 0.2;
+                        e.y += (e.y - closest.y) / dist * 0.2;
                     }
                 }
                 if (e.x - e.width / 2 < 0) e.x = e.width / 2;
@@ -603,56 +638,92 @@ let subWeapon = 0;
             });
             entities = entities.filter(e => e.ttl > 0);
 
+            if (currentDimension == PHYSICAL_DIMENSION || currentDimension == SPECTRAL_DIMENSION) {
+                const pointer = getPointer();
+                const rotation = angleToTarget(player, pointer) - Math.PI / 2;
+                // const keyboardRotation = Math.atan2(
+                //     input.u ? -1 : input.d ? +1 : 0,
+                //     input.l ? -1 : input.r ? +1 : 0
+                // );
+                // if (input.u || input.d || input.l || input.r) {
+                //     player.frontRotation = lerpRadians(player.frontRotation, keyboardRotation, 0.1);
+                // }
+                player.frontRotation = lerpRadians(player.frontRotation, rotation, 0.2);
 
-            const pointer = getPointer();
-            const rotation = angleToTarget(player, pointer) - Math.PI / 2;
-            // const keyboardRotation = Math.atan2(
-            //     input.u ? -1 : input.d ? +1 : 0,
-            //     input.l ? -1 : input.r ? +1 : 0
-            // );
-            // if (input.u || input.d || input.l || input.r) {
-            //     player.frontRotation = lerpRadians(player.frontRotation, keyboardRotation, 0.1);
-            // }
-            player.frontRotation = lerpRadians(player.frontRotation, rotation, 0.2);
+                player.dy = input.u ? -player.speed : input.d ? +player.speed : 0;
+                player.dx = input.l ? -player.speed : input.r ? +player.speed : 0;
 
-            player.dy = input.u ? -player.speed : input.d ? +player.speed : 0;
-            player.dx = input.l ? -player.speed : input.r ? +player.speed : 0;
+                if (player.dimension == SPECTRAL_DIMENSION) {
+                    player.dx += Math.cos(player.frontRotation) * player.speed * 2;
+                    player.dy += Math.sin(player.frontRotation) * player.speed * 2;
+                }
 
-            if (player.dimension == SPECTRAL_DIMENSION) {
-                player.dx += Math.cos(player.frontRotation) * player.speed * 2;
-                player.dy += Math.sin(player.frontRotation) * player.speed * 2;
-            }
-
-            if (pointerPressed('left') && Date.now() >= player.nextCanShoot) {
-                // console.log('pointerPressed', mainWeapon);
-                if (mainWeapon == MAIN_DUAL_PISTOL && player.dimension == PHYSICAL_DIMENSION) { // dual pistol
-                    const bulletSpeed = 20;
-                    const bullet = playerBulletPool.get({
-                        // #IfDev
-                        name: 'bullet',
-                        // #EndIfDev
-                        x: player.x + Math.cos(rotation + gunSide * 0.4) * 12,               // starting x,y position of the sprite
-                        y: player.y + Math.sin(rotation + gunSide * 0.4) * 12,
-                        color: colors.white,  // fill color of the sprite rectangle
-                        width: 8,           // width and height of the sprite rectangle
-                        height: 2,
-                        dx: Math.cos(rotation) * bulletSpeed,
-                        dy: Math.sin(rotation) * bulletSpeed,
-                        rotation,
-                        ttl: 3000,
-                        anchor: { x: 0.5, y: 0.5 },
-                        update: bulletUpdate,
-                        // custom properties
-                        dimension: player.dimension,
-                        bulletSpeed,
-                    });
-                    gunSide = -gunSide;
-                    player.nextCanShoot = Date.now() + 200;
+                if (pointerPressed('left') && Date.now() >= player.nextCanShoot) {
+                    // console.log('pointerPressed', mainWeapon);
+                    if (mainWeapon == MAIN_DUAL_PISTOL && player.dimension == PHYSICAL_DIMENSION) { // dual pistol
+                        const bulletSpeed = 20;
+                        const bullet = playerBulletPool.get({
+                            // #IfDev
+                            name: 'bullet',
+                            // #EndIfDev
+                            x: player.x + Math.cos(rotation + gunSide * 0.4) * 12,               // starting x,y position of the sprite
+                            y: player.y + Math.sin(rotation + gunSide * 0.4) * 12,
+                            color: colors.white,  // fill color of the sprite rectangle
+                            width: 8,           // width and height of the sprite rectangle
+                            height: 2,
+                            dx: Math.cos(rotation) * bulletSpeed,
+                            dy: Math.sin(rotation) * bulletSpeed,
+                            rotation,
+                            ttl: 3000,
+                            anchor: { x: 0.5, y: 0.5 },
+                            update: bulletUpdate,
+                            // custom properties
+                            dimension: player.dimension,
+                            bulletSpeed,
+                        });
+                        gunSide = -gunSide;
+                        player.nextCanShoot = Date.now() + 200;
+                        audio.play('shoot');
+                    }
                 }
             }
-
             HandleSpawnTick();
 
+
+            // respawn
+            if (respawnEnergy >= respawnEnergyGoal) {
+                currentDimension = PHYSICAL_DIMENSION;
+                player.dimension = currentDimension;
+                respawnEnergyGoal = Math.floor(respawnEnergyGoal * DIFFICULTY_RATIO);
+                audio.play('respawn');
+
+                entities
+                    .filter(entity => entity != player && Math.hypot(player.x - entity.x, player.y - entity.y) < 100)
+                    .forEach(entity => {
+
+                        const dist = Math.hypot(player.x - entity.x, player.y - entity.y);
+                        entity.knockDx = (entity.x - player.x) / dist * 12;
+                        entity.knockDy = (entity.y - player.y) / dist * 12;
+                    });
+            }
+
+            // dimension change
+            if (currentDimension == BETWEEN_DIMENSION1 && Date.now() >= dimensionTransitionUntil) {
+                // silence
+                currentDimension = BETWEEN_DIMENSION2;
+                dimensionTransitionUntil = Date.now() + DIMENSION_TRANSITION_LENGTH2;
+                player.dimension = currentDimension;
+            }
+            else if (currentDimension == BETWEEN_DIMENSION2 && Date.now() >= dimensionTransitionUntil) {
+                currentDimension = BETWEEN_DIMENSION3;
+                dimensionTransitionUntil = Date.now() + DIMENSION_TRANSITION_LENGTH3;
+                player.dimension = currentDimension;
+                audio.play('enter_spectral');
+            }
+            else if (currentDimension == BETWEEN_DIMENSION3 && Date.now() >= dimensionTransitionUntil) {
+                currentDimension = SPECTRAL_DIMENSION;
+                player.dimension = currentDimension;
+            }
         },
         render() { // render the game state
             // background
@@ -666,10 +737,10 @@ let subWeapon = 0;
 
 
             // background fade-in-out
-            if (Math.abs(currentDimension - dimensionAlpha) <= 0.05) {
+            if (currentDimension == SPECTRAL_DIMENSION || currentDimension == PHYSICAL_DIMENSION) {
                 dimensionAlpha = currentDimension;
-            } else {
-                dimensionAlpha += Math.sign(currentDimension - dimensionAlpha) * 0.05;
+            } else if (currentDimension == BETWEEN_DIMENSION3 && dimensionTransitionUntil - Date.now() < DIMENSION_TRANSITION_LENGTH3) {
+                dimensionAlpha = 1 - (dimensionTransitionUntil - Date.now()) / DIMENSION_TRANSITION_LENGTH3 // Math.sign(currentDimension - dimensionAlpha) * 0.05;
             }
 
             // spectral background
@@ -723,7 +794,7 @@ let subWeapon = 0;
                 playerBulletPool,
                 ...enemyBullets
             ].forEach(e => {
-                e.render();
+                if (e != player || currentDimension == PHYSICAL_DIMENSION || currentDimension == SPECTRAL_DIMENSION) e.render();
 
                 // draw a bar for respawning spectral entities
                 if (e.returnHp) {
@@ -735,30 +806,47 @@ let subWeapon = 0;
                 }
             });
 
-            const pointer = getPointer();
-            const xx = player.x;
-            const yy = player.y;
-            const aimX = pointer.x - xx;
-            const aimY = pointer.y - yy;
 
-            context.save();
-            context.strokeStyle = currentDimension ? colors.blue : colors.orange;
-            context.lineWidth = 1;
-            context.globalAlpha = 0.3;
+            if (currentDimension == BETWEEN_DIMENSION1) {
+                // death? animation
+                let progress = 1 - (dimensionTransitionUntil - Date.now()) / DIMENSION_TRANSITION_LENGTH1;
+                progress *= progress;
+                const ww = player.image.width + 10000 * progress;
+                const hh = player.image.height * (1 - progress);
+                context.drawImage(player.image, player.x - ww / 2, player.y - hh / 2, ww, hh);
+            } else if (currentDimension == BETWEEN_DIMENSION3) {
+                // death? animation
+                let progress = (dimensionTransitionUntil - Date.now()) / DIMENSION_TRANSITION_LENGTH3;
+                progress *= progress;
+                const ww = player.image.width + 10000 * progress;
+                const hh = player.image.height * (1 - progress);
+                context.drawImage(player.image, player.x - ww / 2, player.y - hh / 2, ww, hh);
+            } else {
+                const pointer = getPointer();
+                const xx = player.x;
+                const yy = player.y;
+                const aimX = pointer.x - xx;
+                const aimY = pointer.y - yy;
 
-            context.beginPath();
-            context.moveTo(xx, yy);
-            context.lineTo(xx + aimX * 100, yy + aimY * 100);
-            context.stroke();
+                context.save();
+                context.strokeStyle = currentDimension ? colors.blue : colors.orange;
+                context.lineWidth = 1;
+                context.globalAlpha = 0.3;
 
-            context.beginPath();
-            context.moveTo(xx, yy);
-            context.lineTo(xx + Math.cos(player.frontRotation) * 16, yy + Math.sin(player.frontRotation) * 16);
-            context.stroke();
-            context.restore();
+                context.beginPath();
+                context.moveTo(xx, yy);
+                context.lineTo(xx + aimX * 100, yy + aimY * 100);
+                context.stroke();
+
+                context.beginPath();
+                context.moveTo(xx, yy);
+                context.lineTo(xx + Math.cos(player.frontRotation) * 16, yy + Math.sin(player.frontRotation) * 16);
+                context.stroke();
+                context.restore();
+            }
 
             // score
-            context.fillStyle = currentDimension ? colors.white : colors.black;
+            context.fillStyle = currentDimension == SPECTRAL_DIMENSION ? colors.white : colors.black;
             context.fillText(score, 10, 10);
         }
     });
