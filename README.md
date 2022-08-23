@@ -53,6 +53,37 @@ Object.values({
 
 (See https://github.com/vicksonzero/spectral-shooter/blob/master/src/lib/jsfxr.js#L31-L54)
 
+Mapping:
+
+| old                 | new             |
+| ------------------- | --------------- |
+| waveType            | wave_type       |
+| attackTime          | p_env_attack    |
+| sustainTime         | p_env_sustain   |
+| sustainPunch        | p_env_punch     |
+| decayTime           | p_env_decay     |
+| startFrequency      | p_base_freq     |
+| minFrequency        | p_freq_limit    |
+| slide               | p_freq_ramp     |
+| deltaSlide          | p_freq_dramp    |
+| vibratoDepth        | p_vib_strength  |
+| vibratoSpeed        | p_vib_speed     |
+| changeAmount        | p_arp_mod       |
+| changeSpeed         | p_arp_speed     |
+| squareDuty          | p_duty          |
+| dutySweep           | p_duty_ramp     |
+| repeatSpeed         | p_repeat_speed  |
+| phaserOffset        | p_pha_offset    |
+| phaserSweep         | p_pha_ramp      |
+| lpFilterCutoff      | p_lpf_freq      |
+| lpFilterCutoffSweep | p_lpf_ramp      |
+| lpFilterResonance   | p_lpf_resonance |
+| hpFilterCutoff      | p_hpf_freq      |
+| hpFilterCutoffSweep | p_hpf_ramp      |
+| masterVolume        | sound_vol       |
+|                     | sample_rate     |
+|                     | sample_size     |
+
 
 # Roadmap
 
