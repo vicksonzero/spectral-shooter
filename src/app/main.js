@@ -26,7 +26,7 @@ import { ArcadeAudio } from './audio';
 
 const DIFFICULTY_RATIO = 1.1; // GoldenRatio=1.618
 
-const BACKGROUND_COLOR = colors.bgGray;
+const BACKGROUND_COLOR = colors.bgBrown;
 const PHYSICAL_DIMENSION = 0;
 const SPECTRAL_DIMENSION = 1;
 const BETWEEN_DIMENSION1 = 2;
@@ -53,7 +53,7 @@ const TEAM_PLAYER = 0;
 const TEAM_ENEMY = 1; // or undefined
 
 
-const ENEMY_RESPAWN_TIME = 20;
+const ENEMY_RESPAWN_TIME = 25;
 const TUT_WASD = 'Use WASD, ZQSD, or Arrow keys to move';
 const TUT_SHOOT = 'Use mouse to aim, left click to shoot';
 const TUT_ENEMIES = `Enemies can respawn after ${ENEMY_RESPAWN_TIME} seconds`;
@@ -72,11 +72,13 @@ let score = 0;
 let scoreMultiplier = 1;
 let scoreMultiplierNextTick = 0;
 
-let respawnEnergy = 0;
+let energy = 0;
 let respawnEnergyGoal = 5;
 let respawnEnergyTimeLimit = 0;
+let levelUpEnergyGoal = 15;
 
 let nextSpawnTick = -1;
+let enemyCount = 0;
 
 let mainWeapon = MAIN_NONE// MAIN_NONE;
 let gunSide = 1; // 0, 1
@@ -100,7 +102,7 @@ let subWeapon = 0;
     ];
 
     const audio = new ArcadeAudio();
-
+    // audio.volume=0;
 
     // init
     let { canvas, context } = init();
@@ -216,7 +218,7 @@ let subWeapon = 0;
             anchor: { x: 0.5, y: 0.5 },
 
             // custom properties
-            hp: 5,
+            hp: 4,
             images: [images.basicEnemyPhysical, images.basicEnemySpectral],
             dimension: PHYSICAL_DIMENSION,
             b: 'dw<.',
@@ -364,7 +366,7 @@ let subWeapon = 0;
                     if (this.mainWeapon) { // not zero
                         mainWeapon = this.mainWeapon;
                         nextSpawnTick = Date.now() + 500;
-                        console.log(mainWeapon);
+                        // console.log(mainWeapon);
                     }
                     if (this.subWeapon) { // not zero
                         subWeapon = this.subWeapon;
@@ -438,7 +440,7 @@ let subWeapon = 0;
     function HandleSpawnTick() {
         if (nextSpawnTick == -1 || nextSpawnTick > Date.now()) return;
 
-        for (let i = 0; i < 3; i++) {
+        for (let i = 0; i < (enemyCount > levelUpEnergyGoal ? 2 : 3); i++) {
             for (let trial = 0; trial < 10; trial++) {
                 const x = Math.random() * (canvas.width - 100) + 50;
                 const y = Math.random() * (canvas.height - 100) + 50;
@@ -446,12 +448,13 @@ let subWeapon = 0;
 
                 if (!entities.some(entity => Math.hypot(x - entity.x, y - entity.y) < entity.width / 2 + spawnWidth / 2)) {
                     spawnWithPortal(spawnBasicEnemy, { x, y });
+                    enemyCount++;
                     break;
                 }
             }
         }
 
-        nextSpawnTick = Date.now() + 4000 + Math.random() * 4000;
+        nextSpawnTick = Date.now() + 6000 + Math.random() * 2000;
     }
     function bulletUpdate(dt) {
         this.advance(dt);
@@ -468,6 +471,7 @@ let subWeapon = 0;
             if (entity.hp <= 0) {
                 score += 10 * scoreMultiplier;
                 entity.ttl = 0;
+                energy++;
                 audio.play('explosion');
                 entity.onDeathSpawn?.();
             }
@@ -628,7 +632,8 @@ let subWeapon = 0;
                 if (enemyCollideWithPlayer && player.dimension == SPECTRAL_DIMENSION && e.returnHp) {
                     // eat ghostFire
                     audio.play('coin');
-                    respawnEnergy++;
+                    energy++;
+                    enemyCount--;
                     e.ttl = 0;
 
                     // add to resurrection energy
@@ -647,7 +652,8 @@ let subWeapon = 0;
 
                     player.dx = 0;
                     player.dy = 0;
-                    respawnEnergy = 0;
+                    energy = 0;
+                    respawnEnergyTimeLimit = Date.now() + 13 * 1000;
 
                     audio.play('death');
                 }
@@ -738,22 +744,35 @@ let subWeapon = 0;
             HandleSpawnTick();
 
 
-            // respawn
-            if (respawnEnergy >= respawnEnergyGoal) {
-                currentDimension = PHYSICAL_DIMENSION;
-                player.dimension = currentDimension;
-                respawnEnergyGoal = Math.ceil(respawnEnergyGoal * DIFFICULTY_RATIO);
-                console.log('respawnEnergyGoal', respawnEnergyGoal);
-                audio.play('respawn');
+            // if (currentDimension == PHYSICAL_DIMENSION && energy >= respawnEnergyGoal) {
+            //     audio.play('respawn');
 
-                entities
-                    .filter(entity => entity != player && Math.hypot(player.x - entity.x, player.y - entity.y) < 100)
-                    .forEach(entity => {
+            // }
+            // time's up
+            if (currentDimension == SPECTRAL_DIMENSION && Date.now() >= respawnEnergyTimeLimit) {
+                if (energy < respawnEnergyGoal) {
+                    // game over
 
-                        const dist = Math.hypot(player.x - entity.x, player.y - entity.y);
-                        entity.knockDx = (entity.x - player.x) / dist * 12;
-                        entity.knockDy = (entity.y - player.y) / dist * 12;
-                    });
+                    audio.play('game_over');
+                } else {
+                    // respawn
+
+                    currentDimension = PHYSICAL_DIMENSION;
+                    player.dimension = currentDimension;
+                    energy = 0;
+                    respawnEnergyGoal = Math.ceil(respawnEnergyGoal * DIFFICULTY_RATIO);
+                    console.log('new respawnEnergyGoal', respawnEnergyGoal);
+                    audio.play('respawn');
+
+                    // radial knockback
+                    entities
+                        .filter(entity => entity != player && Math.hypot(player.x - entity.x, player.y - entity.y) < 100)
+                        .forEach(entity => {
+                            const dist = Math.hypot(player.x - entity.x, player.y - entity.y);
+                            entity.knockDx = (entity.x - player.x) / dist * 12;
+                            entity.knockDy = (entity.y - player.y) / dist * 12;
+                        });
+                }
             }
 
             // dimension change
@@ -894,9 +913,62 @@ let subWeapon = 0;
                 context.restore();
             }
 
+            // energy bar
+
+            const padding = 20;
+            const barWidth = (canvas.width - padding - padding) * Math.min(1, energy / levelUpEnergyGoal);
+            const respawnEnergyGoalX = Math.floor(padding + (canvas.width - padding - padding) * respawnEnergyGoal / levelUpEnergyGoal);
+            const levelUpEnergyGoalX = Math.floor(padding + (canvas.width - padding - padding));
+
+            context.globalAlpha = 0.7;
+            context.fillStyle = colors.gray;
+            context.fillRect(padding + barWidth, 280 + 2, canvas.width - padding - padding - barWidth, 4);
+
+            context.fillStyle = currentDimension == SPECTRAL_DIMENSION ? colors.blue : colors.orange;
+            context.fillRect(padding, 280, barWidth, 8);
+
+
+            context.strokeStyle = currentDimension ? colors.blue : colors.orange;
+            context.lineWidth = 1;
+
+            context.beginPath();
+            context.moveTo(respawnEnergyGoalX, 280 - 4);
+            context.lineTo(respawnEnergyGoalX, 280 + 8 + 4);
+            context.stroke();
+
+            context.beginPath();
+            context.moveTo(levelUpEnergyGoalX, 280 - 4);
+            context.lineTo(levelUpEnergyGoalX, 280 + 8 + 4);
+            context.stroke();
+
+            context.globalAlpha = 1;
+
+            context.fillStyle = colors.white;
+            context.textAlign = 'right';
+            context.fillText('1-up', respawnEnergyGoalX - 2, 280 - 4);
+            context.fillText('Level up', levelUpEnergyGoalX - 2, 280 - 4);
+
+
             // score
-            context.fillStyle = currentDimension == SPECTRAL_DIMENSION ? colors.white : colors.black;
-            context.fillText(score, 10, 10);
+            context.textAlign = 'left';
+            context.fillStyle = colors.white;
+            context.font = '10px sans-serif';
+            context.fillText('Score', 20, 14);
+            context.font = '20px sans-serif';
+            context.fillText(score, 20, 36);
+
+
+
+            if (currentDimension == SPECTRAL_DIMENSION && Date.now() < respawnEnergyTimeLimit) {
+                context.font = '48px sans-serif';
+                context.textAlign = 'center';
+                context.fillStyle = colors.white;
+                context.globalAlpha = 0.5;
+                context.fillText(Math.floor((respawnEnergyTimeLimit - Date.now()) / 1000), canvas.width / 2, canvas.height / 2);
+            }
+            context.textAlign = 'left';
+            context.globalAlpha = 1;
+            context.font = '10px sans-serif';
         }
     });
 

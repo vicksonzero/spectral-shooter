@@ -1,6 +1,7 @@
 
 export const colors = {
-    bgGray: 'Gray',
+    bgBrown: '#80705e',
+    bgGray: '#808080',
     bgOrange: '#f4dfc2', // '#B19D82', 
 
     darkOrange: '#DD6C03',
