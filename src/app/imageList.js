@@ -30,6 +30,17 @@ export { default as tile105 } from '../assets/foliage/tile105.png'
 export { default as tile121 } from '../assets/items/tile121.png'
 export { default as tile133 } from '../assets/items/tile133.png'
 export { default as tile134 } from '../assets/items/tile134.png'
+export { default as tile478 } from '../assets/items/tile478.png' // single pistol
+export { default as tile478_b } from '../assets/items/tile478_b.png' // dual pistol
+export { default as tile478_c } from '../assets/items/tile478_c.png' // dual small pistol
+export { default as tile479 } from '../assets/items/tile479.png'
+export { default as tile480 } from '../assets/items/tile480.png'
+export { default as tile481 } from '../assets/items/tile481.png'
+export { default as tile482 } from '../assets/items/tile482.png'
+export { default as tile483 } from '../assets/items/tile483.png'
+export { default as tile484 } from '../assets/items/tile484.png'
+export { default as tile485 } from '../assets/items/tile485.png'
+export { default as tile486 } from '../assets/items/tile486.png'
 export { default as tile018 } from '../assets/tiles/tile018.png'
 export { default as tile019 } from '../assets/tiles/tile019.png'
 export { default as tile020 } from '../assets/tiles/tile020.png'

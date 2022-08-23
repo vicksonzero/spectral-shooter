@@ -6,16 +6,18 @@ import { colors } from './colors'
 export async function loadImages() {
     return {
         basicEnemyOrange: await createImageAsync(imageList.tile028, colors.darkOrange),
-        basicEnemyGray: await createImageAsync(imageList.tile028, colors.gray),
-        basicEnemyDarkGray: await createImageAsync(imageList.tile028, colors.darkGray),
-        playerOrange: await createImageAsync(imageList.tile077, colors.orange),
-        playerLightGray: await createImageAsync(imageList.tile077, colors.lightGray),
-        spectralFireBlue: await createImageAsync(imageList.tile505, colors.blue),
-        spectralFireLightGray: await createImageAsync(imageList.tile505, colors.lightGray),
+        basicEnemyPhysical: await createImageAsync(imageList.tile028, colors.darkGray),
+        basicEnemySpectral: await createImageAsync(imageList.tile028, colors.gray),
+        playerPhysical: await createImageAsync(imageList.tile077, colors.orange),
+        playerSpectral: await createImageAsync(imageList.tile077, colors.lightGray),
+        ghostFirePhysical: await createImageAsync(imageList.tile505, colors.lightGray),
+        ghostFireSpectral: await createImageAsync(imageList.tile505, colors.blue),
         boxWhite: await createImageAsync(imageList.tile121, colors.white),
         boxDarkGray: await createImageAsync(imageList.tile121, colors.lightGray),
-        dualPistolOrange: await createImageAsync(imageList.tile133, colors.orange),
+        dualPistolOrange: await createImageAsync(imageList.tile478_c, colors.orange),
         spiritRevolverBlue: await createImageAsync(imageList.tile133, colors.blue),
+        floorTile1: await createImageAsync(imageList.tile006, colors.lightGray),
+        floorTile2: await createImageAsync(imageList.tile002, colors.lightGray),
     };
 }
 

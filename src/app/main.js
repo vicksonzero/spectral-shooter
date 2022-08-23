@@ -20,8 +20,10 @@ import { loadImages } from './images';
  * W=wall,   // static, plus absorbs bullets
  * m=melee,  // does knockback on both sides
  * s=shooty(spellCard),
+ * // b=box()     // gives item
  */
 
+const BACKGROUND_COLOR = colors.bgGray;
 const PHYSICAL_DIMENSION = 0;
 const SPECTRAL_DIMENSION = 1;
 
@@ -44,6 +46,12 @@ const SUB_SPIRIT_REVOLVER = 1 // Spectral Revolver
 const TEAM_PLAYER = 0;
 const TEAM_ENEMY = 1; // or undefined
 
+
+const ENEMY_RESPAWN_TIME = 20;
+const TUT_WASD = 'Use WASD, ZQSD, or Arrow keys to move';
+const TUT_SHOOT = 'Use mouse to aim, left click to shoot';
+const TUT_ENEMIES = `Enemies can respawn after ${ENEMY_RESPAWN_TIME} seconds`;
+const TUT_SPECTRAL_ATTACK = 'Touch %1% ghost fire to respawn';
 
 
 
@@ -103,19 +111,19 @@ let subWeapon = 0;
         // #IfDev
         name: 'player',
         // #EndIfDev
-        x: 100,        // starting x,y position of the sprite
-        y: 80,
+        x: canvas.width / 2,        // starting x,y position of the sprite
+        y: canvas.height / 2 + 100,
         // color: 'red',  // fill color of the sprite rectangle
         // width: 20,     // width and height of the sprite rectangle
         // height: 40,
         // dx: 2,
         // dy: 2,
-        image: images.playerOrange,
+        image: images.playerPhysical,
         anchor: { x: 0.5, y: 0.5 },
 
         // custom properties
         team: TEAM_PLAYER, // 0=player, 1=enemy
-        images: [images.playerOrange, images.playerLightGray],
+        images: [images.playerPhysical, images.playerSpectral],
         speed: 1.5,
         nextCanShoot: Date.now(),
         dimension: PHYSICAL_DIMENSION, // 0=physical, 1=spectral
@@ -191,33 +199,55 @@ let subWeapon = 0;
             // #EndIfDev
             x: this.x,
             y: this.y,
-            image: images.basicEnemyGray,
+            image: images.basicEnemyPhysical,
             anchor: { x: 0.5, y: 0.5 },
 
             // custom properties
             hp: 5,
-            images: [images.basicEnemyGray, images.basicEnemyDarkGray],
+            images: [images.basicEnemyPhysical, images.basicEnemySpectral],
             dimension: PHYSICAL_DIMENSION,
             b: 'dw<.',
-            onDeathSpawn() { spawnSpectralFire.call(this, randomUnitVector()); },
+            onDeathSpawn() { spawnGhostFire.call(this, randomUnitVector()); },
             targetX: this.x,
             targetY: this.y,
             speed: 1,
             aiNextTick: Date.now(),
+            hitEffectUntil: Date.now(),
+            render() {
+                context.globalAlpha = this.hitEffectUntil > Date.now() ? 0.7 : 1;
+                // @ifdef SPRITE_IMAGE
+                if (this.image) {
+                    context.drawImage(
+                        this.image,
+                        0,
+                        0,
+                        this.image.width,
+                        this.image.height
+                    );
+                }
+                // @endif
+
+                if (this.color) {
+                    context.fillStyle = this.color;
+                    //@ts-ignore
+                    context.fillRect(0, 0, this.width, this.height);
+                }
+                context.globalAlpha = 1;
+            },
         });
         // entity.x = this.x - entity.width / 2;
         // entity.y = this.y - entity.height / 2;
         entities.push(entity);
     };
-    function spawnSpectralFire(knockbackDir) {
-        console.log('spawnSpectralFire', this.x, this.y, knockbackDir);
+    function spawnGhostFire(knockbackDir) {
+        console.log('spawnGhostFire', this.x, this.y, knockbackDir.x, knockbackDir.y);
         const entity = Sprite({
             // #IfDev
-            name: 'SpectralFire',
+            name: 'GhostFire',
             // #EndIfDev
             x: this.x,
             y: this.y,
-            image: images.spectralFireLightGray,
+            image: images.ghostFirePhysical,
             anchor: { x: 0.5, y: 0.5 },
 
             render() {
@@ -242,7 +272,7 @@ let subWeapon = 0;
             },
 
             // custom properties
-            images: [images.spectralFireLightGray, images.spectralFireBlue],
+            images: [images.ghostFirePhysical, images.ghostFireSpectral],
             dimension: 1,
             hp: 1,
             b: 'w>.',
@@ -252,7 +282,7 @@ let subWeapon = 0;
             targetX: this.x,
             targetY: this.y,
             aiNextTick: Date.now(),
-            returnHp: 60 * 20,
+            returnHp: 60 * ENEMY_RESPAWN_TIME,
             spawnEntity: spawnBasicEnemy,
         });
         // entity.x = this.x - entity.width / 2;
@@ -260,34 +290,55 @@ let subWeapon = 0;
         entities.push(entity);
     }
 
-    function spawnBox(x, y, mainWeapon, subWeapon) {
+    function spawnBox(x, y, _mainWeapon, _subWeapon) {
         const entity = Sprite({
             x, y,
             image: images.boxWhite,
-            mainWeapon,
-            subWeapon,
+            mainWeapon: _mainWeapon,
+            subWeapon: _subWeapon,
+            update() {
+                if (Math.hypot(player.x - this.x, player.y - this.y) < this.width / 2 + player.width / 2) {
+                    console.log('player collide box');
+
+                    if (this.mainWeapon) { // not zero
+                        mainWeapon = this.mainWeapon;
+                        nextSpawnTick = Date.now() + 500;
+                        console.log(mainWeapon);
+                    }
+                    if (this.subWeapon) { // not zero
+                        subWeapon = this.subWeapon;
+                    }
+                    this.ttl = 0;
+                }
+            },
             render() {
                 // draw box
+                const _x = - this.image.width / 2;
+                const _y = - this.image.height / 2;
                 // @ifdef SPRITE_IMAGE
                 if (this.image) {
+                    // context.fillStyle = colors.blue;
+                    // context.fillRect(_x, _y, this.image.width, this.image.height);
                     context.fillStyle = colors.darkGray;
-                    context.fillRect(0, 0, this.image.width, this.image.height);
-                    context.drawImage(
-                        this.image,
-                        0,
-                        0,
-                        this.image.width,
-                        this.image.height
-                    );
+                    context.beginPath();
+                    context.ellipse(0, 0 + this.height - 10, 6, 2, 0, 0, Math.PI * 2);
+                    context.fill();
+                    // context.drawImage(
+                    //     this.image,
+                    //     0,
+                    //     0,
+                    //     this.image.width,
+                    //     this.image.height
+                    // );
                 }
                 // @endif
                 // draw bounding weapon
                 const amplitude = 1;
-                const yy = Math.sin(Date.now() % 500 / 500 * 2 * Math.PI) * amplitude - 10;
+                const yy = Math.sin(Date.now() % 500 / 500 * 2 * Math.PI) * amplitude - 12;
                 if (this.mainWeapon) { // not zero
                     context.drawImage(
                         mainWeaponImages[this.mainWeapon],
-                        0,
+                        _x,
                         yy,
                         this.image.width,
                         this.image.height
@@ -323,13 +374,18 @@ let subWeapon = 0;
     function HandleSpawnTick() {
         if (nextSpawnTick == -1 || nextSpawnTick > Date.now()) return;
 
-        const x = Math.random() * (canvas.width - 100) + 50;
-        const y = Math.random() * (canvas.height - 100) + 50;
-        const spawnWidth = 64;
+        for (let trial = 0; trial < 10; trial++) {
+            const x = Math.random() * (canvas.width - 100) + 50;
+            const y = Math.random() * (canvas.height - 100) + 50;
+            const spawnWidth = 64;
 
-        if (!entities.some(entity => Math.hypot(x - entity.x, y - entity.y) < entity.width / 2 + spawnWidth / 2)) {
-            spawnWithPortal(spawnBasicEnemy, { x, y });
+            if (!entities.some(entity => Math.hypot(x - entity.x, y - entity.y) < entity.width / 2 + spawnWidth / 2)) {
+                spawnWithPortal(spawnBasicEnemy, { x, y });
+                break;
+            }
         }
+
+        nextSpawnTick = Date.now() + 1500 + Math.random() * 2000;
     }
     function bulletUpdate(dt) {
         this.advance(dt);
@@ -339,12 +395,16 @@ let subWeapon = 0;
             ;
         if (entity) {
             console.log('collision');
+
+            // damage enemy
             entity.hp -= 1;
+            entity.hitEffectUntil = Date.now() + 30;
             if (entity.hp <= 0) {
                 score += 10 * scoreMultiplier;
                 entity.ttl = 0;
                 entity.onDeathSpawn?.();
             }
+            // destroy bullet
             this.ttl = 0;
 
         }
@@ -362,7 +422,7 @@ let subWeapon = 0;
     //     x: 250,
     //     y: 100,
     // });
-    spawnBox(canvas.width / 2, canvas.height / 2, 1);
+    spawnBox(canvas.width / 2, canvas.height / 2, MAIN_DUAL_PISTOL);
 
     // Inputs (see https://xem.github.io/articles/jsgamesinputs.html)
     const input = {
@@ -444,20 +504,20 @@ let subWeapon = 0;
                     e.knockDy *= 0.85;
                 }
 
-                // targeting: chase, avoid, wander
+                // ai targeting: chase, avoid, wander
                 if (e.targetX != null) {
-                    if (Date.now() > e.aiNextTick) {
-                        // choose target
-                        if (e.b?.includes('<') && e.dimension == player.dimension) {
-                            e.targetX = player.x, e.targetY = player.y;
-                            e.speed = 1;
-                        } else if (e.b?.includes('>') && e.dimension == player.dimension) {
-                            const dist = Math.hypot(e.x - player.x, e.y - player.y);
+                    // choose target
+                    if (e.b?.includes('<') && Date.now() > e.aiNextTick && e.dimension == player.dimension) {
+                        e.targetX = player.x, e.targetY = player.y;
+                        e.speed = 1;
+                    } else if (e.b?.includes('>') && e.dimension == player.dimension) {
+                        const dist = Math.hypot(e.x - player.x, e.y - player.y);
+                        if (dist < 100) {
                             e.targetX = e.x + (e.x - player.x) / dist * 100;
                             e.targetY = e.y + (e.y - player.y) / dist * 100;
                             e.speed = 1;
                             e.aiNextTick = Date.now() + 2000;
-                        } else if (e.b?.includes('.')) {
+                        } else if (Date.now() > e.aiNextTick) {
                             const randomVector = randomUnitVector();
                             const randomDistance = Math.random() * 32 + 16;
                             e.targetX = e.x + randomVector.x * randomDistance;
@@ -465,6 +525,13 @@ let subWeapon = 0;
                             e.speed = 0.5;
                             e.aiNextTick = Date.now() + 2000;
                         }
+                    } else if (e.b?.includes('.') && Date.now() > e.aiNextTick) {
+                        const randomVector = randomUnitVector();
+                        const randomDistance = Math.random() * 32 + 16;
+                        e.targetX = e.x + randomVector.x * randomDistance;
+                        e.targetY = e.y + randomVector.y * randomDistance;
+                        e.speed = 0.5;
+                        e.aiNextTick = Date.now() + 2000;
                     }
                     // move
                     const dist = Math.hypot(e.x - e.targetX, e.y - e.targetY);
@@ -476,6 +543,7 @@ let subWeapon = 0;
                     }
                 }
 
+                // ai respawn
                 if (e.returnHp) {
                     e.hp++;
                     if (e.hp >= e.returnHp) {
@@ -488,16 +556,44 @@ let subWeapon = 0;
 
                 // collision
                 const collisions = entities.filter(entity => entity != e && Math.hypot(e.x - entity.x, e.y - entity.y) < entity.width / 2 + e.width / 2);
-                if (player.dimension == SPECTRAL_DIMENSION && collisions.some(entity => entity == player) && e.returnHp) {
-                    // kill spectral fire
+
+                const enemyCollideWithPlayer = collisions.some(entity => entity == player);
+                // if spectral enemy collides spectral player
+                if (enemyCollideWithPlayer && player.dimension == SPECTRAL_DIMENSION && e.returnHp) {
+                    // eat ghostFire
                     e.ttl = 0;
+
+                    // add to resurrection energy
                 }
+
+                // if physical enemy collides physical player
+                if (enemyCollideWithPlayer && player.dimension == SPECTRAL_DIMENSION && e.returnHp) {
+                    // kill player
+                }
+
+                // if physical enemy collides spectral player
+                if (enemyCollideWithPlayer && player.dimension == SPECTRAL_DIMENSION && e.dimension == PHYSICAL_DIMENSION) {
+                    // damage enemy
+                    e.hp -= 3;
+                    if (e.hp <= 0) {
+                        score += 10 * scoreMultiplier;
+                        e.ttl = 0;
+                        e.onDeathSpawn?.();
+                    }
+                    // knockback player
+
+                    const dist = Math.hypot(player.x - e.x, player.y - e.y);
+                    player.knockDx = (player.x - e.x) / dist * 12;
+                    player.knockDy = (player.y - e.y) / dist * 12;
+                    console.log('knock player', player.knockDx, player.knockDy);
+                }
+
                 if (e != player && collisions.length) {
                     const closest = collisions[0];
                     const dist = Math.hypot(e.x - closest.x, e.y - closest.y);
-                    if (dist > 0.01) {
-                        e.x += (e.x - closest.x) / dist * 0.1;
-                        e.y += (e.y - closest.y) / dist * 0.1;
+                    if (dist > 0.001) {
+                        e.x += (e.x - closest.x) / dist * 0.15;
+                        e.y += (e.y - closest.y) / dist * 0.15;
                     }
                 }
                 if (e.x - e.width / 2 < 0) e.x = e.width / 2;
@@ -510,22 +606,25 @@ let subWeapon = 0;
 
             const pointer = getPointer();
             const rotation = angleToTarget(player, pointer) - Math.PI / 2;
-            const keyboardRotation = Math.atan2(
-                input.u ? -1 : input.d ? +1 : 0,
-                input.l ? -1 : input.r ? +1 : 0
-            );
-            if (input.u || input.d || input.l || input.r) {
-                player.frontRotation = lerpRadians(player.frontRotation, keyboardRotation, 0.1);
-            }
+            // const keyboardRotation = Math.atan2(
+            //     input.u ? -1 : input.d ? +1 : 0,
+            //     input.l ? -1 : input.r ? +1 : 0
+            // );
+            // if (input.u || input.d || input.l || input.r) {
+            //     player.frontRotation = lerpRadians(player.frontRotation, keyboardRotation, 0.1);
+            // }
+            player.frontRotation = lerpRadians(player.frontRotation, rotation, 0.2);
+
+            player.dy = input.u ? -player.speed : input.d ? +player.speed : 0;
+            player.dx = input.l ? -player.speed : input.r ? +player.speed : 0;
+
             if (player.dimension == SPECTRAL_DIMENSION) {
-                player.dx = Math.cos(player.frontRotation) * player.speed * 2;
-                player.dy = Math.sin(player.frontRotation) * player.speed * 2;
-            } else {
-                player.dy = input.u ? -player.speed : input.d ? +player.speed : 0;
-                player.dx = input.l ? -player.speed : input.r ? +player.speed : 0;
+                player.dx += Math.cos(player.frontRotation) * player.speed * 2;
+                player.dy += Math.sin(player.frontRotation) * player.speed * 2;
             }
 
             if (pointerPressed('left') && Date.now() >= player.nextCanShoot) {
+                // console.log('pointerPressed', mainWeapon);
                 if (mainWeapon == MAIN_DUAL_PISTOL && player.dimension == PHYSICAL_DIMENSION) { // dual pistol
                     const bulletSpeed = 20;
                     const bullet = playerBulletPool.get({
@@ -534,7 +633,7 @@ let subWeapon = 0;
                         // #EndIfDev
                         x: player.x + Math.cos(rotation + gunSide * 0.4) * 12,               // starting x,y position of the sprite
                         y: player.y + Math.sin(rotation + gunSide * 0.4) * 12,
-                        color: colors.gray,  // fill color of the sprite rectangle
+                        color: colors.white,  // fill color of the sprite rectangle
                         width: 8,           // width and height of the sprite rectangle
                         height: 2,
                         dx: Math.cos(rotation) * bulletSpeed,
@@ -557,13 +656,14 @@ let subWeapon = 0;
         },
         render() { // render the game state
             // background
-            context.fillStyle = colors.darkGray;
+            context.fillStyle = BACKGROUND_COLOR;
             context.fillRect(0, 0, canvas.width, canvas.height);
             const gradient = context.createRadialGradient(
                 canvas.width / 2, canvas.height / 2, 30,
                 canvas.width / 2, canvas.height / 2, 300);
             gradient.addColorStop(0, colors.darkBlue);
             gradient.addColorStop(1, colors.black);
+
 
             // background fade-in-out
             if (Math.abs(currentDimension - dimensionAlpha) <= 0.05) {
@@ -576,7 +676,46 @@ let subWeapon = 0;
             context.fillStyle = gradient;
             context.globalAlpha = dimensionAlpha; // FIXME: alpha does not work with firefox https://bugzilla.mozilla.org/show_bug.cgi?id=1164912
             context.fillRect(0, 0, canvas.width, canvas.height);
+            // context.globalAlpha = 1;
+
+            // render some tiles
+            context.globalAlpha = 0.4;
+            [
+                [16 * 5, 16 * 6],
+                [16 * 5, 16 * 7],
+                [16 * 6, 16 * 7],
+                [16 * 7, 16 * 7],
+                [16 * 6, 16 * 8],
+
+                [16 * 15, 16 * 3],
+
+                [16 * 15, 16 * 7],
+                [16 * 16, 16 * 7],
+                [16 * 17, 16 * 7],
+                [16 * 17, 16 * 8],
+                [16 * 18, 16 * 8],
+                [16 * 16, 16 * 8],
+
+                [16 * 25, 16 * 2],
+                [16 * 25, 16 * 3],
+                [16 * 25, 16 * 4],
+                [16 * 25, 16 * 5],
+                [16 * 25, 16 * 6],
+                [16 * 26, 16 * 3],
+                [16 * 26, 16 * 4],
+                [16 * 26, 16 * 5],
+                [16 * 26, 16 * 6],
+                [16 * 26, 16 * 7],
+
+                [16 * 10, 16 * 13],
+                [16 * 11, 16 * 13],
+                [16 * 12, 16 * 13],
+                [16 * 13, 16 * 14],
+                [16 * 13, 16 * 15],
+                [16 * 14, 16 * 14],
+            ].forEach(([x, y]) => context.drawImage(images.floorTile1, x, y));
             context.globalAlpha = 1;
+
             // render all entities
             [
                 ...portals,
@@ -588,7 +727,7 @@ let subWeapon = 0;
 
                 // draw a bar for respawning spectral entities
                 if (e.returnHp) {
-                    context.fillStyle = colors.gray;
+                    context.fillStyle = colors.lightGray;
                     context.globalAlpha = 0.3;
                     context.fillRect(e.x - e.width / 2, e.y + 12, e.width, 2);
                     context.globalAlpha = 1;
@@ -603,7 +742,7 @@ let subWeapon = 0;
             const aimY = pointer.y - yy;
 
             context.save();
-            context.strokeStyle = currentDimension ? colors.blue : colors.darkOrange;
+            context.strokeStyle = currentDimension ? colors.blue : colors.orange;
             context.lineWidth = 1;
             context.globalAlpha = 0.3;
 
