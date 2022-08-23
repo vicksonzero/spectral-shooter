@@ -24,7 +24,7 @@ import { ArcadeAudio } from './audio';
  * // b=box()     // gives item
  */
 
-const DIFFICULTY_RATIO = 1.618; // GoldenRatio=1.618
+const DIFFICULTY_RATIO = 1.1; // GoldenRatio=1.618
 
 const BACKGROUND_COLOR = colors.bgGray;
 const PHYSICAL_DIMENSION = 0;
@@ -74,6 +74,7 @@ let scoreMultiplierNextTick = 0;
 
 let respawnEnergy = 0;
 let respawnEnergyGoal = 5;
+let respawnEnergyTimeLimit = 0;
 
 let nextSpawnTick = -1;
 
@@ -203,9 +204,6 @@ let subWeapon = 0;
     function dist(a, b) { // not using it saves more space ?!
         return Math.hypot(a.x - b.x, a.y - b.y);
     }
-    function hasCircleCollisionWith(a, b) { // not using it saves more space ?!
-        return dist(a, b) < b.width / 2 + a.width / 2;
-    }
     function spawnBasicEnemy() {
         // console.log('spawnBasicEnemy', this.x, this.y);
         const entity = Sprite({
@@ -242,11 +240,59 @@ let subWeapon = 0;
                 }
                 // @endif
 
-                if (this.color) {
-                    context.fillStyle = this.color;
-                    //@ts-ignore
-                    context.fillRect(0, 0, this.width, this.height);
+                // if (this.color) {
+                //     context.fillStyle = this.color;
+                //     //@ts-ignore
+                //     context.fillRect(0, 0, this.width, this.height);
+                // }
+                context.globalAlpha = 1;
+            },
+        });
+        // entity.x = this.x - entity.width / 2;
+        // entity.y = this.y - entity.height / 2;
+        entities.push(entity);
+    };
+    function spawnShooterEnemy() {
+        // console.log('spawnShooterEnemy', this.x, this.y);
+        const entity = Sprite({
+            // #IfDev
+            name: 'ShooterEnemy',
+            // #EndIfDev
+            x: this.x,
+            y: this.y,
+            image: images.basicEnemyPhysical,
+            anchor: { x: 0.5, y: 0.5 },
+
+            // custom properties
+            hp: 5,
+            images: [images.basicEnemyPhysical, images.basicEnemySpectral],
+            dimension: PHYSICAL_DIMENSION,
+            b: 'dw<.',
+            onDeathSpawn() { spawnGhostFire.call(this, randomUnitVector()); },
+            targetX: this.x,
+            targetY: this.y,
+            speed: 1,
+            aiNextTick: Date.now(),
+            hitEffectUntil: Date.now(),
+            render() {
+                context.globalAlpha = this.hitEffectUntil > Date.now() ? 0.7 : 1;
+                // @ifdef SPRITE_IMAGE
+                if (this.image) {
+                    context.drawImage(
+                        this.image,
+                        0,
+                        0,
+                        this.image.width,
+                        this.image.height
+                    );
                 }
+                // @endif
+
+                // if (this.color) {
+                //     context.fillStyle = this.color;
+                //     //@ts-ignore
+                //     context.fillRect(0, 0, this.width, this.height);
+                // }
                 context.globalAlpha = 1;
             },
         });
@@ -392,18 +438,20 @@ let subWeapon = 0;
     function HandleSpawnTick() {
         if (nextSpawnTick == -1 || nextSpawnTick > Date.now()) return;
 
-        for (let trial = 0; trial < 10; trial++) {
-            const x = Math.random() * (canvas.width - 100) + 50;
-            const y = Math.random() * (canvas.height - 100) + 50;
-            const spawnWidth = 64;
+        for (let i = 0; i < 3; i++) {
+            for (let trial = 0; trial < 10; trial++) {
+                const x = Math.random() * (canvas.width - 100) + 50;
+                const y = Math.random() * (canvas.height - 100) + 50;
+                const spawnWidth = 64;
 
-            if (!entities.some(entity => Math.hypot(x - entity.x, y - entity.y) < entity.width / 2 + spawnWidth / 2)) {
-                spawnWithPortal(spawnBasicEnemy, { x, y });
-                break;
+                if (!entities.some(entity => Math.hypot(x - entity.x, y - entity.y) < entity.width / 2 + spawnWidth / 2)) {
+                    spawnWithPortal(spawnBasicEnemy, { x, y });
+                    break;
+                }
             }
         }
 
-        nextSpawnTick = Date.now() + 1500 + Math.random() * 2000;
+        nextSpawnTick = Date.now() + 4000 + Math.random() * 4000;
     }
     function bulletUpdate(dt) {
         this.advance(dt);
@@ -694,7 +742,8 @@ let subWeapon = 0;
             if (respawnEnergy >= respawnEnergyGoal) {
                 currentDimension = PHYSICAL_DIMENSION;
                 player.dimension = currentDimension;
-                respawnEnergyGoal = Math.floor(respawnEnergyGoal * DIFFICULTY_RATIO);
+                respawnEnergyGoal = Math.ceil(respawnEnergyGoal * DIFFICULTY_RATIO);
+                console.log('respawnEnergyGoal', respawnEnergyGoal);
                 audio.play('respawn');
 
                 entities
