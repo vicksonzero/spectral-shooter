@@ -360,6 +360,7 @@ let subWeapon = 0;
         // entity.x = this.x - entity.width / 2;
         // entity.y = this.y - entity.height / 2;
         entities.push(entity);
+        return entity;
     }
 
     function spawnBox(x, y, _mainWeapon, _subWeapon) {
@@ -433,19 +434,6 @@ let subWeapon = 0;
         entities.push(entity);
     }
 
-    function spawnWithPortal(spawnEntity, { x, y }) {
-        portals.push({
-            // #IfDev
-            name: 'portal',
-            // #EndIfDev
-            x,
-            y,
-            untilTime: Date.now() + 2000,
-            ...portalPrototype,
-            spawnEntity,
-        });
-    }
-
     function HandleSpawnTick() {
         // spawner
         if (nextSpawnTick == -1 || nextSpawnTick > Date.now()) return;
@@ -461,7 +449,7 @@ let subWeapon = 0;
                 ];
 
                 if (!entities.some(entity => Math.hypot(x - entity.x, y - entity.y) < entity.width / 2 + spawnWidth / 2)) {
-                    spawnWithPortal(list[Math.floor(Math.random() * list.length)], { x, y });
+                    spawnGhostFire.call({ x, y }, { x: 0, y: 0 }, list[Math.floor(Math.random() * list.length)]).hp = 50 * ENEMY_RESPAWN_TIME;
                     enemyCount++;
                     break;
                 }
@@ -514,18 +502,6 @@ let subWeapon = 0;
         }
     }
 
-    // spawnWithPortal(spawnBasicEnemy, {
-    //     x: 200,
-    //     y: 200,
-    // });
-    // spawnWithPortal(spawnBasicEnemy, {
-    //     x: 250,
-    //     y: 200,
-    // });
-    // spawnWithPortal(spawnBasicEnemy, {
-    //     x: 250,
-    //     y: 100,
-    // });
     spawnBox(canvas.width / 2, canvas.height / 2, MAIN_DUAL_PISTOL);
 
     // Inputs (see https://xem.github.io/articles/jsgamesinputs.html)
