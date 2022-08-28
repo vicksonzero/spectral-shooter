@@ -8,8 +8,8 @@ export async function loadImages() {
         basicEnemyPhysical: await createImageAsync(imageList.tile028, colors.darkGray),
         basicEnemySpectral: await createImageAsync(imageList.tile028, colors.gray),
 
-        shooterEnemyPhysical: await createImageAsync(imageList.tile028, colors.darkGray),
-        shooterEnemySpectral: await createImageAsync(imageList.tile028, colors.gray),
+        shooterEnemyPhysical: await createImageAsync(imageList.tile080, colors.darkGray),
+        shooterEnemySpectral: await createImageAsync(imageList.tile080, colors.gray),
         
         ghostFirePhysical: await createImageAsync(imageList.tile505, colors.lightGray),
         ghostFireSpectral: await createImageAsync(imageList.tile505, colors.blue),

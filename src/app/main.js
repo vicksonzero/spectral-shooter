@@ -102,7 +102,7 @@ let subWeapon = 0;
     ];
 
     const audio = new ArcadeAudio();
-    audio.volume = 0; // TODO: make mute button
+    // audio.volume = 0; // TODO: make mute button
 
     // init
     let { canvas, context } = init();
@@ -218,17 +218,18 @@ let subWeapon = 0;
             anchor: { x: 0.5, y: 0.5 },
 
             // custom properties
-            hp: 4,
+            hp: 5,
             images: [images.basicEnemyPhysical, images.basicEnemySpectral],
             dimension: PHYSICAL_DIMENSION,
             b: 'dw<.',
             strafe: 0,
-            onDeathSpawn() { spawnGhostFire.call(this, randomUnitVector()); },
+            onDeathSpawn() { spawnGhostFire.call(this, randomUnitVector(), spawnBasicEnemy); },
             targetX: this.x,
             targetY: this.y,
             speed: 1,
             aiNextTick: Date.now(),
             hitEffectUntil: Date.now(),
+            team: TEAM_ENEMY,
             render() {
                 context.globalAlpha = this.hitEffectUntil > Date.now() ? 0.7 : 1;
                 // @ifdef SPRITE_IMAGE
@@ -263,21 +264,24 @@ let subWeapon = 0;
             // #EndIfDev
             x: this.x,
             y: this.y,
-            image: images.basicEnemyPhysical,
+            image: images.shooterEnemyPhysical,
             anchor: { x: 0.5, y: 0.5 },
 
             // custom properties
-            hp: 5,
-            images: [images.basicEnemyPhysical, images.basicEnemySpectral],
+            hp: 3,
+            team: TEAM_ENEMY,
+            images: [images.shooterEnemyPhysical, images.shooterEnemySpectral],
             dimension: PHYSICAL_DIMENSION,
-            b: 'dw<.',
-            strafe: 200,
-            onDeathSpawn() { spawnGhostFire.call(this, randomUnitVector()); },
+            b: 'dw<.s',
+            strafe: 150,
+            onDeathSpawn() { spawnGhostFire.call(this, randomUnitVector(), spawnShooterEnemy); },
             targetX: this.x,
             targetY: this.y,
             speed: 1,
             aiNextTick: Date.now(),
             hitEffectUntil: Date.now(),
+            team: TEAM_ENEMY,
+            nextCanShoot: Date.now() + 1500,
             render() {
                 context.globalAlpha = this.hitEffectUntil > Date.now() ? 0.7 : 1;
                 // @ifdef SPRITE_IMAGE
@@ -304,7 +308,7 @@ let subWeapon = 0;
         // entity.y = this.y - entity.height / 2;
         entities.push(entity);
     };
-    function spawnGhostFire(knockbackDir) {
+    function spawnGhostFire(knockbackDir, spawnEntity) {
         console.log('spawnGhostFire', this.x, this.y, knockbackDir.x, knockbackDir.y);
         const entity = Sprite({
             // #IfDev
@@ -319,6 +323,7 @@ let subWeapon = 0;
                 const yy = Math.sin(Date.now() % 500 / 500 * 2 * Math.PI) * 1;
                 // @ifdef SPRITE_IMAGE
                 if (this.image) {
+                    if (currentDimension == PHYSICAL_DIMENSION && this.hp / this.returnHp < 0.7) context.globalAlpha = 0.3;
                     context.drawImage(
                         this.image,
                         0,
@@ -326,6 +331,7 @@ let subWeapon = 0;
                         this.image.width,
                         this.image.height
                     );
+                    context.globalAlpha = 1;
                 }
                 // @endif
 
@@ -337,6 +343,7 @@ let subWeapon = 0;
             },
 
             // custom properties
+            team: TEAM_ENEMY,
             images: [images.ghostFirePhysical, images.ghostFireSpectral],
             dimension: 1,
             hp: 1,
@@ -348,7 +355,7 @@ let subWeapon = 0;
             targetY: this.y,
             aiNextTick: Date.now() + 1000,
             returnHp: 60 * ENEMY_RESPAWN_TIME,
-            spawnEntity: spawnBasicEnemy,
+            spawnEntity,
         });
         // entity.x = this.x - entity.width / 2;
         // entity.y = this.y - entity.height / 2;
@@ -440,6 +447,7 @@ let subWeapon = 0;
     }
 
     function HandleSpawnTick() {
+        // spawner
         if (nextSpawnTick == -1 || nextSpawnTick > Date.now()) return;
 
         for (let i = 0; i < (enemyCount > levelUpEnergyGoal ? 2 : 3); i++) {
@@ -447,9 +455,13 @@ let subWeapon = 0;
                 const x = Math.random() * (canvas.width - 100) + 50;
                 const y = Math.random() * (canvas.height - 100) + 50;
                 const spawnWidth = 64;
+                const list = [
+                    spawnBasicEnemy,
+                    spawnShooterEnemy,
+                ];
 
                 if (!entities.some(entity => Math.hypot(x - entity.x, y - entity.y) < entity.width / 2 + spawnWidth / 2)) {
-                    spawnWithPortal(spawnBasicEnemy, { x, y });
+                    spawnWithPortal(list[Math.floor(Math.random() * list.length)], { x, y });
                     enemyCount++;
                     break;
                 }
@@ -461,7 +473,7 @@ let subWeapon = 0;
     function bulletUpdate(dt) {
         this.advance(dt);
         const entity = entities
-            .filter(entity => entity.hp && entity.team === this.team && entity.dimension === this.dimension)
+            .filter(entity => entity.hp && entity.team !== this.team && entity.dimension === this.dimension)
             .find(entity => Math.hypot(this.x - entity.x, this.y - entity.y) < entity.width / 2 + this.width / 2)
             ;
         if (entity) {
@@ -481,6 +493,24 @@ let subWeapon = 0;
             audio.play('hit');
             this.ttl = 0;
 
+        }
+        if (currentDimension == PHYSICAL_DIMENSION && Math.hypot(this.x - player.x, this.y - player.y) < player.width / 2 + this.width / 2) {
+            enemyBulletPool.getAliveObjects().forEach(b => b.ttl = 0);
+            // kill player into spectral dimension
+
+            currentDimension = BETWEEN_DIMENSION1;
+            player.dimension = currentDimension;
+
+            dimensionAlpha = 0;
+            dimensionTransitionUntil = Date.now() + DIMENSION_TRANSITION_LENGTH1;
+            // console.log('currentDimension', currentDimension);
+
+            player.dx = 0;
+            player.dy = 0;
+            energy = 0;
+            respawnEnergyTimeLimit = Date.now() + 13 * 1000;
+
+            audio.play('death');
         }
     }
 
@@ -561,7 +591,7 @@ let subWeapon = 0;
             [
                 ...entities,
                 playerBulletPool,
-                ...enemyBullets
+                enemyBulletPool,
             ].forEach(thisEntity => {
                 thisEntity.image = thisEntity.images?.[currentDimension] ?? thisEntity.image;
 
@@ -578,6 +608,8 @@ let subWeapon = 0;
 
                 // ai targeting: chase, avoid, wander
                 if (thisEntity.targetX != null) {
+                    const distToPlayer = Math.hypot(thisEntity.x - player.x, thisEntity.y - player.y);
+
                     if (thisEntity.b?.includes('<') && Date.now() > thisEntity.aiNextTick && thisEntity.dimension == player.dimension) {
                         // chase target
                         const rotation = angleToTarget(player, thisEntity) - Math.PI / 2 + Math.random() - 0.5;
@@ -585,14 +617,15 @@ let subWeapon = 0;
                         thisEntity.targetY = player.y + Math.sin(rotation) * thisEntity.strafe;
                         thisEntity.speed = 1;
                         if (thisEntity.strafe > 0) thisEntity.aiNextTick = Date.now() + 3000;
+
                     } else if (thisEntity.b?.includes('>') && thisEntity.dimension == player.dimension) {
                         // avoid target
-                        const dist = Math.hypot(thisEntity.x - player.x, thisEntity.y - player.y);
-                        if (dist < 100) {
-                            thisEntity.targetX = thisEntity.x + (thisEntity.x - player.x) / dist * 100;
-                            thisEntity.targetY = thisEntity.y + (thisEntity.y - player.y) / dist * 100;
+                        if (distToPlayer < 100) {
+                            thisEntity.targetX = thisEntity.x + (thisEntity.x - player.x) / distToPlayer * 100;
+                            thisEntity.targetY = thisEntity.y + (thisEntity.y - player.y) / distToPlayer * 100;
                             thisEntity.speed = 0.5;
                             thisEntity.aiNextTick = Date.now() + 2000;
+
                         } else if (Date.now() > thisEntity.aiNextTick) {
                             const randomVector = randomUnitVector();
                             const randomDistance = Math.random() * 32 + 16;
@@ -611,37 +644,46 @@ let subWeapon = 0;
                         thisEntity.aiNextTick = Date.now() + 2000;
                     }
                     // shoot enemy bullet
-                    if (thisEntity.b?.includes('s') && Date.now() >= thisEntity.nextCanShoot) {
-                        const bulletSpeed = 3;
+                    if (thisEntity.b?.includes('s') && currentDimension == thisEntity.dimension && distToPlayer < 250 && Date.now() >= thisEntity.nextCanShoot) {
+                        console.log('enemy shoot');
+                        const rotation = angleToTarget(thisEntity, player) - Math.PI / 2;
+
+                        const bulletSpeed = 1.2;
                         const enemyBullet = enemyBulletPool.get({
                             // #IfDev
                             name: 'EnemyBullet',
                             // #EndIfDev
-                            x: thisEntity.x + Math.cos(rotation + gunSide * 0.4) * 12, // starting x,y position of the sprite
-                            y: thisEntity.y + Math.sin(rotation + gunSide * 0.4) * 12,
-                            color: colors.white,  // fill color of the sprite rectangle
-                            width: 8,           // width and height of the sprite rectangle
-                            height: 2,
+                            x: thisEntity.x + Math.cos(rotation) * 12, // starting x,y position of the sprite
+                            y: thisEntity.y + Math.sin(rotation) * 12,
+                            width: 5,              // width and height of the sprite rectangle
+                            height: 5,
                             dx: Math.cos(rotation) * bulletSpeed,
                             dy: Math.sin(rotation) * bulletSpeed,
-                            rotation,
+                            render() {
+                                context.fillStyle = colors.orange;
+                                context.beginPath();
+                                context.ellipse(this.width / 2, this.height / 2, 5, 3, /*this.seed * Math.PI +*/ Math.PI * 2 * (Date.now() % 1000) / 1000, 0, 2 * Math.PI);
+                                context.fill();
+                            },
+
                             ttl: 3000,
                             anchor: { x: 0.5, y: 0.5 },
                             update: bulletUpdate,
                             // custom properties
+                            seed: Math.random(),
                             dimension: player.dimension,
                             bulletSpeed,
+                            team: TEAM_ENEMY,
                         });
-                        gunSide = -gunSide;
-                        thisEntity.nextCanShoot = Date.now() + 200;
+                        thisEntity.nextCanShoot = Date.now() + 2000;
                     }
                     // move
-                    const dist = Math.hypot(thisEntity.x - thisEntity.targetX, thisEntity.y - thisEntity.targetY);
-                    if (dist < thisEntity.speed) {
+                    const distToTarget = Math.hypot(thisEntity.x - thisEntity.targetX, thisEntity.y - thisEntity.targetY);
+                    if (distToTarget < thisEntity.speed) {
                         thisEntity.x = thisEntity.targetX, thisEntity.y = thisEntity.targetY;
                     } else {
-                        thisEntity.x += (thisEntity.targetX - thisEntity.x) / dist * thisEntity.speed;
-                        thisEntity.y += (thisEntity.targetY - thisEntity.y) / dist * thisEntity.speed;
+                        thisEntity.x += (thisEntity.targetX - thisEntity.x) / distToTarget * thisEntity.speed;
+                        thisEntity.y += (thisEntity.targetY - thisEntity.y) / distToTarget * thisEntity.speed;
                     }
                 }
 
@@ -766,6 +808,7 @@ let subWeapon = 0;
                             // custom properties
                             dimension: player.dimension,
                             bulletSpeed,
+                            team: TEAM_PLAYER,
                         });
                         gunSide = -gunSide;
                         player.nextCanShoot = Date.now() + 200;
@@ -803,6 +846,11 @@ let subWeapon = 0;
                             const dist = Math.hypot(player.x - entity.x, player.y - entity.y);
                             entity.knockDx = (entity.x - player.x) / dist * 12;
                             entity.knockDy = (entity.y - player.y) / dist * 12;
+                        });
+                    entities
+                        .filter(entity => entity.b?.includes('s'))
+                        .forEach(entity => {
+                            entity.nextCanShoot = Date.now() + 1000 + Math.random() * 1000;
                         });
                 }
             }
@@ -892,7 +940,7 @@ let subWeapon = 0;
                 ...portals,
                 ...entities,
                 playerBulletPool,
-                ...enemyBullets
+                enemyBulletPool,
             ].forEach(e => {
                 if (e != player || currentDimension == PHYSICAL_DIMENSION || currentDimension == SPECTRAL_DIMENSION) e.render();
 
