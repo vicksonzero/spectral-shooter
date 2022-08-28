@@ -112,6 +112,11 @@ let subWeapon = 0;
 
     let blocks = [];
     let entities = [];
+    let effectsPool = Pool({
+        // create a new sprite every time the pool needs a new object
+        //@ts-ignore
+        create: Sprite
+    });
     let playerBulletPool = Pool({
         // create a new sprite every time the pool needs a new object
         //@ts-ignore
@@ -122,7 +127,6 @@ let subWeapon = 0;
         //@ts-ignore
         create: Sprite
     });
-    const effects = [];
 
     let player = Sprite({
         /* #IfDev */
@@ -324,7 +328,7 @@ let subWeapon = 0;
                 const yy = Math.sin(Date.now() % 500 / 500 * 2 * Math.PI) * 1;
                 // @ifdef SPRITE_IMAGE
                 if (this.image) {
-                    if (currentDimension == PHYSICAL_DIMENSION && this.hp / this.returnHp < 0.7) context.globalAlpha = 0.3;
+                    if (currentDimension == PHYSICAL_DIMENSION && this.returnHp - this.hp > 180) context.globalAlpha = 0.3 + 0.7 * (this.hp / this.returnHp);
                     context.drawImage(
                         this.image,
                         0,
@@ -364,28 +368,36 @@ let subWeapon = 0;
         return entity;
     }
 
-    function spawnEffect(type, position, direction, ttl) {
+    function spawnEffect(type, position, rotation, speed, image, ttl) {
+        /**
+         * types:
+         * 1 = fly + fade out
+         */
         /* #IfDev */
-        console.log('spawnEffect', this.x, this.y, knockbackDir.x, knockbackDir.y);
+        console.log('spawnEffect', type, position, rotation, speed, image, ttl);
         /* #EndIfDev */
-        const entity = Sprite({
+        const effect = effectsPool.get({
             /* #IfDev */
-            name: 'GhostFire',
+            name: 'Effect',
             /* #EndIfDev */
-            x: this.x,
-            y: this.y,
-            image: images.ghostFirePhysical,
+            x: position.x,
+            y: position.y,
+            dx: Math.cos(rotation) * speed,
+            dy: Math.sin(rotation) * speed,
+            image,
             anchor: { x: 0.5, y: 0.5 },
+            ttl,
+            ttl2: ttl,
 
             render() {
-                const yy = Math.sin(Date.now() % 500 / 500 * 2 * Math.PI) * 1;
                 // @ifdef SPRITE_IMAGE
                 if (this.image) {
-                    if (currentDimension == PHYSICAL_DIMENSION && this.hp / this.returnHp < 0.7) context.globalAlpha = 0.3;
+                    // type 1
+                    context.globalAlpha = (this.ttl / this.ttl2) * 0.7;
                     context.drawImage(
                         this.image,
                         0,
-                        yy,
+                        0,
                         this.image.width,
                         this.image.height
                     );
@@ -401,24 +413,12 @@ let subWeapon = 0;
             },
 
             // custom properties
-            team: TEAM_ENEMY,
-            images: [images.ghostFirePhysical, images.ghostFireSpectral],
-            dimension: 1,
-            hp: 1,
-            b: 'w>.',
-            knockDx: knockbackDir?.x * 3,
-            knockDy: knockbackDir?.y * 3,
-            speed: 0.2,
-            targetX: this.x,
-            targetY: this.y,
-            aiNextTick: Date.now() + 1000,
-            returnHp: 60 * ENEMY_RESPAWN_TIME,
-            spawnEntity,
+            // targetX: this.x,
+            // targetY: this.y,
         });
         // entity.x = this.x - entity.width / 2;
         // entity.y = this.y - entity.height / 2;
-        entities.push(entity);
-        return entity;
+        return effect;
     }
 
     function spawnBox(x, y, _mainWeapon, _subWeapon) {
@@ -529,13 +529,23 @@ let subWeapon = 0;
 
             // damage enemy
             entity.hp -= 1;
-            entity.hitEffectUntil = Date.now() + 30;
+            entity.hitEffectUntil = Date.now() + 60;
             if (entity.hp <= 0) {
                 score += 10 * scoreMultiplier;
                 entity.ttl = 0;
                 energy++;
-                audio.play('explosion');
                 entity.onDeathSpawn?.();
+
+                audio.play('explosion');
+                let rotation = Math.random() * Math.PI;
+                rotation += Math.PI / 2;
+                spawnEffect(1, entity.position, rotation, 6, entity.image, 10);
+                rotation += Math.PI / 2;
+                spawnEffect(1, entity.position, rotation, 6, entity.image, 10);
+                rotation += Math.PI / 2;
+                spawnEffect(1, entity.position, rotation, 6, entity.image, 10);
+                rotation += Math.PI / 2;
+                spawnEffect(1, entity.position, rotation, 6, entity.image, 10);
             }
             // destroy bullet
             audio.play('hit');
@@ -623,6 +633,7 @@ let subWeapon = 0;
     let loop = GameLoop({  // create the main game loop
         update() { // update the game state
             [
+                effectsPool,
                 ...entities,
                 playerBulletPool,
                 enemyBulletPool,
@@ -977,7 +988,7 @@ let subWeapon = 0;
 
             // render all entities
             [
-                ...effects,
+                effectsPool,
                 ...entities,
                 playerBulletPool,
                 enemyBulletPool,
@@ -985,12 +996,12 @@ let subWeapon = 0;
                 if (e != player || currentDimension == PHYSICAL_DIMENSION || currentDimension == SPECTRAL_DIMENSION) e.render();
 
                 // draw a bar for respawning spectral entities
-                if (e.returnHp) {
+                if (e.returnHp - e.hp < 180) {
                     context.fillStyle = colors.lightGray;
                     context.globalAlpha = 0.3;
                     context.fillRect(e.x - e.width / 2, e.y + 12, e.width, 2);
                     context.globalAlpha = 1;
-                    context.fillRect(e.x - e.width / 2, e.y + 12, e.width * e.hp / e.returnHp, 2);
+                    context.fillRect(e.x - e.width / 2, e.y + 12, e.width * (180 - e.returnHp + e.hp) / 180, 2);
                 }
             });
 
