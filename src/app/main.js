@@ -63,6 +63,7 @@ const DIMENSION_TRANSITION_LENGTH1 = 500;
 const DIMENSION_TRANSITION_LENGTH2 = 1000;
 const DIMENSION_TRANSITION_LENGTH3 = 1000;
 
+let gameIsOver = 0;
 
 let currentDimension = 0; // 0=physical, 1=spectral
 let dimensionTransitionUntil = 0;
@@ -371,7 +372,8 @@ let subWeapon = 0;
     function spawnEffect(type, position, rotation, speed, image, ttl) {
         /**
          * types:
-         * 1 = fly + fade out
+         * 1 = enemy die effect: fly in direction + fade out
+         * 2 = enemy respawn effect: fly in direction + fade out
          */
         /* #IfDev */
         console.log('spawnEffect', type, position, rotation, speed, image, ttl);
@@ -418,7 +420,7 @@ let subWeapon = 0;
         });
         // entity.x = this.x - entity.width / 2;
         // entity.y = this.y - entity.height / 2;
-        return effect;
+        // return effect;
     }
 
     function spawnBox(x, y, _mainWeapon, _subWeapon) {
@@ -632,6 +634,7 @@ let subWeapon = 0;
 
     let loop = GameLoop({  // create the main game loop
         update() { // update the game state
+            if (gameIsOver) return;
             [
                 effectsPool,
                 ...entities,
@@ -872,10 +875,11 @@ let subWeapon = 0;
             //     audio.play('respawn');
 
             // }
-            // time's up
+            // time is up
             if (currentDimension == SPECTRAL_DIMENSION && Date.now() >= respawnEnergyTimeLimit) {
                 if (energy < respawnEnergyGoal) {
                     // game over
+                    gameIsOver = true;
 
                     audio.play('game_over');
                 } else {
@@ -925,6 +929,7 @@ let subWeapon = 0;
             }
         },
         render() { // render the game state
+            context.save();
             // background
             context.fillStyle = BACKGROUND_COLOR;
             context.fillRect(0, 0, canvas.width, canvas.height);
@@ -1097,10 +1102,20 @@ let subWeapon = 0;
                 context.globalAlpha = 0.5;
                 context.fillText(Math.floor((respawnEnergyTimeLimit - Date.now()) / 1000), canvas.width / 2, canvas.height / 2);
             }
-            context.textAlign = 'left';
-            context.globalAlpha = 1;
-            context.font = '10px sans-serif';
+
+
+            if (gameIsOver) {
+                context.font = '48px sans-serif';
+                context.textAlign = 'center';
+                context.fillText(
+                    'Game Over',
+                    canvas.width / 2,
+                    canvas.height / 2
+                );
+            }
+            context.restore();
         }
+
     });
 
     loop.start();    // start the game
