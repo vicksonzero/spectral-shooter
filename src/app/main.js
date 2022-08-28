@@ -26,7 +26,7 @@ import { ArcadeAudio } from './audio';
 
 const DIFFICULTY_RATIO = 1.1; // GoldenRatio=1.618
 
-const BACKGROUND_COLOR = colors.bgBrown;
+const BACKGROUND_COLOR = colors.bgGray;// colors.bgBrown;
 const PHYSICAL_DIMENSION = 0;
 const SPECTRAL_DIMENSION = 1;
 const BETWEEN_DIMENSION1 = 2;
@@ -57,7 +57,7 @@ const ENEMY_RESPAWN_TIME = 25;
 const TUT_WASD = 'Use WASD, ZQSD, or Arrow keys to move';
 const TUT_SHOOT = 'Use mouse to aim, left click to shoot';
 const TUT_ENEMIES = `Enemies can respawn after ${ENEMY_RESPAWN_TIME} seconds`;
-const TUT_SPECTRAL_ATTACK = 'Touch %1% ghost fire to respawn';
+const TUT_SPECTRAL_ATTACK = 'Collect _1 ghost fire to respawn';
 
 const DIMENSION_TRANSITION_LENGTH1 = 500;
 const DIMENSION_TRANSITION_LENGTH2 = 1000;
@@ -110,8 +110,7 @@ let subWeapon = 0;
     context.imageSmoothingEnabled = false;
     initPointer();
 
-    const blocks = [];
-    let portals = [];
+    let blocks = [];
     let entities = [];
     let playerBulletPool = Pool({
         // create a new sprite every time the pool needs a new object
@@ -123,12 +122,12 @@ let subWeapon = 0;
         //@ts-ignore
         create: Sprite
     });
-    const enemyBullets = [];
+    const effects = [];
 
     let player = Sprite({
-        // #IfDev
+        /* #IfDev */
         name: 'player',
-        // #EndIfDev
+        /* #EndIfDev */
         x: canvas.width / 2,        // starting x,y position of the sprite
         y: canvas.height / 2 + 80,
         // color: 'red',  // fill color of the sprite rectangle
@@ -209,9 +208,9 @@ let subWeapon = 0;
     function spawnBasicEnemy() {
         // console.log('spawnBasicEnemy', this.x, this.y);
         const entity = Sprite({
-            // #IfDev
+            /* #IfDev */
             name: 'BasicEnemy',
-            // #EndIfDev
+            /* #EndIfDev */
             x: this.x,
             y: this.y,
             image: images.basicEnemyPhysical,
@@ -259,9 +258,9 @@ let subWeapon = 0;
     function spawnShooterEnemy() {
         // console.log('spawnShooterEnemy', this.x, this.y);
         const entity = Sprite({
-            // #IfDev
+            /* #IfDev */
             name: 'ShooterEnemy',
-            // #EndIfDev
+            /* #EndIfDev */
             x: this.x,
             y: this.y,
             image: images.shooterEnemyPhysical,
@@ -309,11 +308,70 @@ let subWeapon = 0;
         entities.push(entity);
     };
     function spawnGhostFire(knockbackDir, spawnEntity) {
+        /* #IfDev */
         console.log('spawnGhostFire', this.x, this.y, knockbackDir.x, knockbackDir.y);
+        /* #EndIfDev */
         const entity = Sprite({
-            // #IfDev
+            /* #IfDev */
             name: 'GhostFire',
-            // #EndIfDev
+            /* #EndIfDev */
+            x: this.x,
+            y: this.y,
+            image: images.ghostFirePhysical,
+            anchor: { x: 0.5, y: 0.5 },
+
+            render() {
+                const yy = Math.sin(Date.now() % 500 / 500 * 2 * Math.PI) * 1;
+                // @ifdef SPRITE_IMAGE
+                if (this.image) {
+                    if (currentDimension == PHYSICAL_DIMENSION && this.hp / this.returnHp < 0.7) context.globalAlpha = 0.3;
+                    context.drawImage(
+                        this.image,
+                        0,
+                        yy,
+                        this.image.width,
+                        this.image.height
+                    );
+                    context.globalAlpha = 1;
+                }
+                // @endif
+
+                if (this.color) {
+                    context.fillStyle = this.color;
+                    //@ts-ignore
+                    context.fillRect(0, 0, this.width, this.height);
+                }
+            },
+
+            // custom properties
+            team: TEAM_ENEMY,
+            images: [images.ghostFirePhysical, images.ghostFireSpectral],
+            dimension: 1,
+            hp: 1,
+            b: 'w>.',
+            knockDx: knockbackDir?.x * 3,
+            knockDy: knockbackDir?.y * 3,
+            speed: 0.2,
+            targetX: this.x,
+            targetY: this.y,
+            aiNextTick: Date.now() + 1000,
+            returnHp: 60 * ENEMY_RESPAWN_TIME,
+            spawnEntity,
+        });
+        // entity.x = this.x - entity.width / 2;
+        // entity.y = this.y - entity.height / 2;
+        entities.push(entity);
+        return entity;
+    }
+
+    function spawnEffect(type, position, direction, ttl) {
+        /* #IfDev */
+        console.log('spawnEffect', this.x, this.y, knockbackDir.x, knockbackDir.y);
+        /* #EndIfDev */
+        const entity = Sprite({
+            /* #IfDev */
+            name: 'GhostFire',
+            /* #EndIfDev */
             x: this.x,
             y: this.y,
             image: images.ghostFirePhysical,
@@ -465,7 +523,9 @@ let subWeapon = 0;
             .find(entity => Math.hypot(this.x - entity.x, this.y - entity.y) < entity.width / 2 + this.width / 2)
             ;
         if (entity) {
+            /* #IfDev */
             console.log('collision');
+            /* #EndIfDev */
 
             // damage enemy
             entity.hp -= 1;
@@ -562,8 +622,6 @@ let subWeapon = 0;
 
     let loop = GameLoop({  // create the main game loop
         update() { // update the game state
-            portals.forEach(e => e.update());
-            portals = portals.filter(p => Date.now() < p.untilTime);
             [
                 ...entities,
                 playerBulletPool,
@@ -621,14 +679,16 @@ let subWeapon = 0;
                     }
                     // shoot enemy bullet
                     if (thisEntity.b?.includes('s') && currentDimension == thisEntity.dimension && distToPlayer < 250 && Date.now() >= thisEntity.nextCanShoot) {
+                        /* #IfDev */
                         console.log('enemy shoot');
+                        /* #EndIfDev */
                         const rotation = angleToTarget(thisEntity, player) - Math.PI / 2;
 
                         const bulletSpeed = 1.2;
                         const enemyBullet = enemyBulletPool.get({
-                            // #IfDev
+                            /* #IfDev */
                             name: 'EnemyBullet',
-                            // #EndIfDev
+                            /* #EndIfDev */
                             x: thisEntity.x + Math.cos(rotation) * 12, // starting x,y position of the sprite
                             y: thisEntity.y + Math.sin(rotation) * 12,
                             width: 5,              // width and height of the sprite rectangle
@@ -724,7 +784,9 @@ let subWeapon = 0;
                     const dist = Math.hypot(player.x - thisEntity.x, player.y - thisEntity.y);
                     player.knockDx = (player.x - thisEntity.x) / dist * 12;
                     player.knockDy = (player.y - thisEntity.y) / dist * 12;
+                    /* #IfDev */
                     console.log('knock player', player.knockDx, player.knockDy);
+                    /* #EndIfDev */
                 }
 
                 if (thisEntity != player && collisions.length) {
@@ -767,9 +829,9 @@ let subWeapon = 0;
                     if (mainWeapon == MAIN_DUAL_PISTOL && player.dimension == PHYSICAL_DIMENSION) { // dual pistol
                         const bulletSpeed = 20;
                         const bullet = playerBulletPool.get({
-                            // #IfDev
+                            /* #IfDev */
                             name: 'bullet',
-                            // #EndIfDev
+                            /* #EndIfDev */
                             x: player.x + Math.cos(rotation + gunSide * 0.4) * 12,               // starting x,y position of the sprite
                             y: player.y + Math.sin(rotation + gunSide * 0.4) * 12,
                             color: colors.white,  // fill color of the sprite rectangle
@@ -812,7 +874,9 @@ let subWeapon = 0;
                     player.dimension = currentDimension;
                     energy = 0;
                     respawnEnergyGoal = Math.ceil(respawnEnergyGoal * DIFFICULTY_RATIO);
+                    /* #IfDev */
                     console.log('new respawnEnergyGoal', respawnEnergyGoal);
+                    /* #EndIfDev */
                     audio.play('respawn');
 
                     // radial knockback
@@ -913,7 +977,7 @@ let subWeapon = 0;
 
             // render all entities
             [
-                ...portals,
+                ...effects,
                 ...entities,
                 playerBulletPool,
                 enemyBulletPool,
@@ -977,7 +1041,7 @@ let subWeapon = 0;
             const levelUpEnergyGoalX = Math.floor(padding + (canvas.width - padding - padding));
 
             context.globalAlpha = 0.7;
-            context.fillStyle = colors.gray;
+            context.fillStyle = colors.darkGray;
             context.fillRect(padding + barWidth, 280 + 2, canvas.width - padding - padding - barWidth, 4);
 
             context.fillStyle = currentDimension == SPECTRAL_DIMENSION ? colors.blue : colors.orange;
