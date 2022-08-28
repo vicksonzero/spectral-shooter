@@ -739,7 +739,7 @@ let subWeapon = 0;
 
                 const enemyCollideWithPlayer = collisions.some(entity => entity == player);
                 // if spectral enemy collides spectral player
-                if (enemyCollideWithPlayer && player.dimension == SPECTRAL_DIMENSION && thisEntity.returnHp) {
+                if (enemyCollideWithPlayer && currentDimension == SPECTRAL_DIMENSION && thisEntity.returnHp) {
                     // eat ghostFire
                     audio.play('coin');
                     energy++;
@@ -750,7 +750,7 @@ let subWeapon = 0;
                 }
 
                 // if physical enemy collides physical player
-                if (enemyCollideWithPlayer && player.dimension == PHYSICAL_DIMENSION && thisEntity.dimension == PHYSICAL_DIMENSION) {
+                if (enemyCollideWithPlayer && currentDimension == PHYSICAL_DIMENSION && thisEntity.dimension == PHYSICAL_DIMENSION) {
                     // kill player into spectral dimension
 
                     currentDimension = BETWEEN_DIMENSION1;
@@ -769,7 +769,7 @@ let subWeapon = 0;
                 }
 
                 // if physical enemy collides spectral player
-                if (enemyCollideWithPlayer && player.dimension == SPECTRAL_DIMENSION && thisEntity.dimension == PHYSICAL_DIMENSION) {
+                if (enemyCollideWithPlayer && currentDimension == SPECTRAL_DIMENSION && thisEntity.dimension == PHYSICAL_DIMENSION) {
                     // damage enemy
                     audio.play('hit');
                     thisEntity.hp -= 3;
@@ -819,14 +819,14 @@ let subWeapon = 0;
                 player.dy = input.u ? -player.speed : input.d ? +player.speed : 0;
                 player.dx = input.l ? -player.speed : input.r ? +player.speed : 0;
 
-                if (player.dimension == SPECTRAL_DIMENSION) {
+                if (currentDimension == SPECTRAL_DIMENSION) {
                     player.dx += Math.cos(player.frontRotation) * player.speed * 2;
                     player.dy += Math.sin(player.frontRotation) * player.speed * 2;
                 }
 
                 if (pointerPressed('left') && Date.now() >= player.nextCanShoot) {
                     // console.log('pointerPressed', mainWeapon);
-                    if (mainWeapon == MAIN_DUAL_PISTOL && player.dimension == PHYSICAL_DIMENSION) { // dual pistol
+                    if (currentDimension == PHYSICAL_DIMENSION && mainWeapon == MAIN_DUAL_PISTOL) { // dual pistol
                         const bulletSpeed = 20;
                         const bullet = playerBulletPool.get({
                             /* #IfDev */
@@ -1044,7 +1044,7 @@ let subWeapon = 0;
             context.fillStyle = colors.darkGray;
             context.fillRect(padding + barWidth, 280 + 2, canvas.width - padding - padding - barWidth, 4);
 
-            context.fillStyle = currentDimension == SPECTRAL_DIMENSION ? colors.blue : colors.orange;
+            context.fillStyle = (currentDimension == SPECTRAL_DIMENSION ? colors.blue : colors.orange);
             context.fillRect(padding, 280, barWidth, 8);
 
 
