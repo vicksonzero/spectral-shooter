@@ -120,8 +120,8 @@ Language
 
 ## Content 1
 - [x] dual pistol
-- [ ] machine gun
-- [ ] Weapon pickups linked to the scores
+- [x] machine gun
+- [x] Weapon pickups linked to the scores
 
 
 ## Public testing

@@ -115,7 +115,7 @@ let timeSpentInSpectralWorld = 0;
     // ];
 
     const audio = new ArcadeAudio();
-    audio.volume = 0; // TODO: make mute button
+    // audio.volume = 0; // TODO: make mute button
 
     // init
     let { canvas, context } = init();
@@ -125,11 +125,13 @@ let timeSpentInSpectralWorld = 0;
 
 
     const waves = [
-        // [waveTime (sec), maxEnemyCount, spawnCount, ...list],
-        [20, 10, 3, spawnBasicEnemy],
-        [40, 20, 3, spawnBasicEnemy, spawnBasicEnemy, spawnShooterEnemy],
-        [40, 30, 3, spawnBasicEnemy, spawnShooterEnemy],
-        [60, 30, 3, spawnBasicEnemy, spawnShooterEnemy, spawnShooterEnemy],
+        // [waveTime (sec), spawnInterval (ms), maxEnemyCount, spawnCount, ...list],
+        [20, 3000, 10, 3, spawnBasicEnemy],
+        [60, 3000, 30, 3, spawnBasicEnemy, spawnBasicEnemy, spawnShooterEnemy],
+        [60, 3000, 50, 3, spawnBasicEnemy, spawnShooterEnemy],
+        [60, 3000, 80, 3, spawnBasicEnemy, spawnShooterEnemy, spawnShooterEnemy],
+        [60, 3000, 80, 5, spawnBasicEnemy, spawnShooterEnemy, spawnShooterEnemy],
+        [60, 3000, 100, 7, spawnBasicEnemy, spawnShooterEnemy, spawnShooterEnemy],
     ];
 
     let waveID = 0;
@@ -240,6 +242,56 @@ let timeSpentInSpectralWorld = 0;
         const entity = Sprite({
             /* #IfDev */
             name: 'BasicEnemy',
+            /* #EndIfDev */
+            x: this.x,
+            y: this.y,
+            image: images.basicEnemyPhysical,
+            anchor: { x: 0.5, y: 0.5 },
+
+            // custom properties
+            hp: 5,
+            images: [images.basicEnemyPhysical, images.basicEnemySpectral],
+            dimension: PHYSICAL_DIMENSION,
+            b: 'dw<.',
+            strafe: 0,
+            onDeathSpawn() { spawnGhostFire.call(this, randomUnitVector(), spawnBasicEnemy); },
+            targetX: this.x,
+            targetY: this.y,
+            speed: 1,
+            aiNextTick: Date.now(),
+            hitEffectUntil: Date.now(),
+            team: TEAM_ENEMY,
+            render() {
+                context.globalAlpha = this.hitEffectUntil > Date.now() ? 0.7 : 1;
+                // @ifdef SPRITE_IMAGE
+                if (this.image) {
+                    context.drawImage(
+                        this.image,
+                        0,
+                        0,
+                        this.image.width,
+                        this.image.height
+                    );
+                }
+                // @endif
+
+                // if (this.color) {
+                //     context.fillStyle = this.color;
+                //     //@ts-ignore
+                //     context.fillRect(0, 0, this.width, this.height);
+                // }
+                context.globalAlpha = 1;
+            },
+        });
+        // entity.x = this.x - entity.width / 2;
+        // entity.y = this.y - entity.height / 2;
+        entities.push(entity);
+    };
+    function spawnFatEnemy() {
+        // console.log('spawnBasicEnemy', this.x, this.y);
+        const entity = Sprite({
+            /* #IfDev */
+            name: 'FatEnemy',
             /* #EndIfDev */
             x: this.x,
             y: this.y,
@@ -458,7 +510,7 @@ let timeSpentInSpectralWorld = 0;
                     // console.log('player collect box');
 
                     if (this.mainWeapon) { // not zero
-                        if (mainWeapon == MAIN_NONE) nextWaveTime = waves[waveID][0];
+                        if (mainWeapon == MAIN_NONE) nextWaveTime = Date.now() + waves[waveID][0] * 1000;
                         mainWeapon = this.mainWeapon;
                         nextSpawnTick = Date.now() + 500;
                         // console.log(mainWeapon);
@@ -476,6 +528,8 @@ let timeSpentInSpectralWorld = 0;
 
                     currentDimension = SPECTRAL_DIMENSION;
                     player.dimension = currentDimension;
+
+                    respawnEnergyTimeLimit = Date.now() + 10 * 1000;
 
                     entities
                         .filter(entity => entity != player && player.position.distance(entity) < 100)
@@ -545,21 +599,34 @@ let timeSpentInSpectralWorld = 0;
         // spawner
         if (nextSpawnTick == -1 || nextSpawnTick > Date.now()) return;
 
-        const [waveTime, maxEnemyCount, spawnCount, ...list] = waves[waveID] ?? waves[waves.length - 1];
+        const [
+            waveTime,
+            spawnInterval,
+            maxEnemyCount,
+            spawnCount,
+            ...list
+        ] = waves[waveID] ?? waves[waves.length - 1];
 
-        for (let i = 0; i < (enemyCount > maxEnemyCount ? 2 : spawnCount); i++) {
+
+        console.log('HandleSpawnTick', {
+            waveTime,
+            spawnInterval,
+            maxEnemyCount,
+            spawnCount,
+            list: list.length,
+        });
+        for (let i = 0; i < (enemyCount > maxEnemyCount ? 1 : spawnCount); i++) {
             const freeSpace = getFreeSpace();
             if (!freeSpace) continue;
             spawnGhostFire.call(freeSpace, { x: 0, y: 0 }, list[(Math.random() * list.length) | 0]).hp = 50 * ENEMY_RESPAWN_TIME;
             enemyCount++;
-            break;
         }
-        if (Date.now() <= nextWaveTime) {
+        if (Date.now() >= nextWaveTime) {
             waveID++;
-            nextWaveTime = waves[waveID][0];
+            nextWaveTime = Date.now() + waves[waveID] ?? waves[--waveID][0] * 1000;
         }
 
-        nextSpawnTick = Date.now() + 6000 + Math.random() * 2000;
+        nextSpawnTick = Date.now() + spawnInterval + Math.random() * 2000;
     }
     function bulletUpdate(dt) {
         this.advance(dt);
@@ -914,7 +981,7 @@ let timeSpentInSpectralWorld = 0;
                     }
                     if (currentDimension == PHYSICAL_DIMENSION && mainWeapon == MAIN_MACHINE_GUN) {
                         const bulletSpeed = 20;
-                        const bulletRotation = rotation + Math.random() * 1 - 0.5;
+                        const bulletRotation = rotation + Math.random() * 0.2 - 0.1;
                         const bullet = playerBulletPool.get({
                             /* #IfDev */
                             name: 'bullet',
