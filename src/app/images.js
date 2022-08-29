@@ -14,7 +14,7 @@ export async function loadImages() {
         ghostFirePhysical: await createImageAsync(imageList.tile505, colors.lightGray),
         ghostFireSpectral: await createImageAsync(imageList.tile505, colors.blue),
 
-        playerPhysical: await createImageAsync(imageList.tile077, colors.orange),
+        playerPhysical: await createImageAsync(imageList.tile077, colors.darkGray),
         playerSpectral: await createImageAsync(imageList.tile077, colors.lightGray),
 
         boxWhite: await createImageAsync(imageList.tile121, colors.white),

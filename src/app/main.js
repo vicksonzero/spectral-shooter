@@ -103,13 +103,26 @@ let subWeapon = 0;
     ];
 
     const audio = new ArcadeAudio();
-    // audio.volume = 0; // TODO: make mute button
+    audio.volume = 0; // TODO: make mute button
 
     // init
     let { canvas, context } = init();
 
     context.imageSmoothingEnabled = false;
     initPointer();
+
+
+    const waves = [
+        // [waveTime (sec), maxEnemyCount, spawnCount, ...list],
+        [20, 10, 3, spawnBasicEnemy],
+        [40, 20, 3, spawnBasicEnemy, spawnBasicEnemy, spawnShooterEnemy],
+        [40, 30, 3, spawnBasicEnemy, spawnShooterEnemy],
+        [60, 30, 3, spawnBasicEnemy, spawnShooterEnemy, spawnShooterEnemy],
+    ];
+
+    let waveID = 0;
+    let nextWaveTime = 0;
+    let gameStart = Infinity;
 
     let blocks = [];
     let entities = [];
@@ -434,6 +447,7 @@ let subWeapon = 0;
                     // console.log('player collect box');
 
                     if (this.mainWeapon) { // not zero
+                        if (mainWeapon == MAIN_NONE) nextWaveTime = waves[waveID][0];
                         mainWeapon = this.mainWeapon;
                         nextSpawnTick = Date.now() + 500;
                         // console.log(mainWeapon);
@@ -498,15 +512,13 @@ let subWeapon = 0;
         // spawner
         if (nextSpawnTick == -1 || nextSpawnTick > Date.now()) return;
 
-        for (let i = 0; i < (enemyCount > levelUpEnergyGoal ? 2 : 3); i++) {
+        const [waveTime, maxEnemyCount, spawnCount, ...list] = waves[waveID] ?? waves[waves.length - 1];
+
+        for (let i = 0; i < (enemyCount > maxEnemyCount ? 2 : spawnCount); i++) {
             for (let trial = 0; trial < 10; trial++) {
                 const x = Math.random() * (canvas.width - 100) + 50;
                 const y = Math.random() * (canvas.height - 100) + 50;
                 const spawnWidth = 64;
-                const list = [
-                    spawnBasicEnemy,
-                    spawnShooterEnemy,
-                ];
 
                 if (!entities.some(entity => Math.hypot(x - entity.x, y - entity.y) < entity.width / 2 + spawnWidth / 2)) {
                     spawnGhostFire.call({ x, y }, { x: 0, y: 0 }, list[Math.floor(Math.random() * list.length)]).hp = 50 * ENEMY_RESPAWN_TIME;
@@ -514,6 +526,10 @@ let subWeapon = 0;
                     break;
                 }
             }
+        }
+        if (Date.now() <= nextWaveTime) {
+            waveID++;
+            nextWaveTime = waves[waveID][0];
         }
 
         nextSpawnTick = Date.now() + 6000 + Math.random() * 2000;
@@ -834,8 +850,12 @@ let subWeapon = 0;
                 player.dx = input.l ? -player.speed : input.r ? +player.speed : 0;
 
                 if (currentDimension == SPECTRAL_DIMENSION) {
-                    player.dx += Math.cos(player.frontRotation) * player.speed * 2;
-                    player.dy += Math.sin(player.frontRotation) * player.speed * 2;
+                    player.dx = Math.cos(player.frontRotation) * Math.min(player.position.distance(pointer), player.speed * 2);
+                    player.dy = Math.sin(player.frontRotation) * Math.min(player.position.distance(pointer), player.speed * 2);
+                    if (player.position.distance(pointer) < player.speed * 2) {
+                        player.dx = 0;
+                        player.dy = 0;
+                    }
                 }
 
                 if (pointerPressed('left') && Date.now() >= player.nextCanShoot) {
@@ -948,11 +968,14 @@ let subWeapon = 0;
             }
 
             // spectral background
-            context.fillStyle = gradient;
-            context.globalAlpha = dimensionAlpha; // FIXME: alpha does not work with firefox https://bugzilla.mozilla.org/show_bug.cgi?id=1164912
-            context.fillRect(0, 0, canvas.width, canvas.height);
-            // context.globalAlpha = 1;
-
+            if (currentDimension == SPECTRAL_DIMENSION) {
+                context.fillStyle = gradient;
+                context.globalAlpha = dimensionAlpha;
+                // FIXME: alpha does not work with firefox https://bugzilla.mozilla.org/show_bug.cgi?id=1164912
+                // temp-fixed with on/off feature, but transparency still does not work
+                context.fillRect(0, 0, canvas.width, canvas.height);
+                // context.globalAlpha = 1;
+            }
             // render some tiles
             context.globalAlpha = 0.4;
             [
