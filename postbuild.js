@@ -14,8 +14,12 @@ const MAX = 13 * 1024 // 13kb
 output.on('close', function () {
   const bytes = archive.pointer()
   const percent = (bytes / MAX * 100).toFixed(2)
+  const left = MAX - bytes;
   if (bytes > MAX) {
     console.error(`Size overflow: ${bytes} bytes (${percent}%)`)
+  } else if (bytes / MAX > 0.8) {
+    console.log(`Size: ${('' + bytes).padStart(5, ' ')} bytes (${percent}%)`)
+    console.log(`      ${('' + left).padStart(5, ' ')} bytes left.`)
   } else {
     console.log(`Size: ${bytes} bytes (${percent}%)`)
   }
@@ -36,8 +40,8 @@ archive.on('error', function (err) {
 archive.pipe(output)
 archive.append(
   fs.createReadStream('./dist/index.html'), {
-    name: 'index.html'
-  }
+  name: 'index.html'
+}
 )
 
 archive.finalize()

@@ -84,7 +84,9 @@ let enemyCount = 0;
 let mainWeapon = MAIN_NONE// MAIN_NONE;
 let gunSide = 1; // 0, 1
 
-let subWeapon = 0;
+// // @ifdef SUBWEAPON
+// let subWeapon = 0;
+// // @endif
 
 
 
@@ -94,12 +96,12 @@ let subWeapon = 0;
     const mainWeaponImages = [
         '',
         images.dualPistolOrange,
-        images.dualPistolOrange,
+        images.machineGunOrange,
         images.dualPistolOrange,
     ];
     const subWeaponImages = [
         '',
-        images.spiritRevolverBlue,
+        // images.spiritRevolverBlue,
     ];
 
     const audio = new ArcadeAudio();
@@ -342,7 +344,9 @@ let subWeapon = 0;
                 const yy = Math.sin(Date.now() % 500 / 500 * 2 * Math.PI) * 1;
                 // @ifdef SPRITE_IMAGE
                 if (this.image) {
-                    if (currentDimension == PHYSICAL_DIMENSION && this.returnHp - this.hp > 180) context.globalAlpha = 0.3 + 0.7 * (this.hp / this.returnHp);
+                    if (currentDimension == PHYSICAL_DIMENSION && this.returnHp - this.hp > 180) {
+                        context.globalAlpha = 0.3 + 0.7 * (this.hp / this.returnHp);
+                    }
                     context.drawImage(
                         this.image,
                         0,
@@ -426,13 +430,7 @@ let subWeapon = 0;
                     context.fillRect(0, 0, this.width, this.height);
                 }
             },
-
-            // custom properties
-            // targetX: this.x,
-            // targetY: this.y,
         });
-        // entity.x = this.x - entity.width / 2;
-        // entity.y = this.y - entity.height / 2;
         // return effect;
     }
 
@@ -440,8 +438,11 @@ let subWeapon = 0;
         const entity = Sprite({
             x, y,
             image: images.boxWhite,
+            box: 1,
             mainWeapon: _mainWeapon,
-            subWeapon: _subWeapon,
+            // // @ifdef SUBWEAPON
+            // subWeapon: _subWeapon,
+            // // @endif
             update() {
                 if (player.position.distance(this) < this.width / 2 + player.width / 2) {
                     // console.log('player collect box');
@@ -452,11 +453,26 @@ let subWeapon = 0;
                         nextSpawnTick = Date.now() + 500;
                         // console.log(mainWeapon);
                     }
-                    if (this.subWeapon) { // not zero
-                        subWeapon = this.subWeapon;
-                    }
+                    // // @ifdef SUBWEAPON
+                    // if (this.subWeapon) { // not zero
+                    //     subWeapon = this.subWeapon;
+                    // }
+                    // // @endif
+
                     audio.play('pickup');
+                    energy = 0;
+                    levelUpEnergyGoal = 10 + Math.pow(mainWeapon, 1.7) * 5 | 0;
                     this.ttl = 0;
+
+                    currentDimension = SPECTRAL_DIMENSION;
+                    player.dimension = currentDimension;
+
+                    entities
+                        .filter(entity => entity != player && player.position.distance(entity) < 100)
+                        .forEach(entity => {
+                            entity.knockDx = (entity.x - player.x) / player.position.distance(entity) * 12;
+                            entity.knockDy = (entity.y - player.y) / player.position.distance(entity) * 12;
+                        });
                 }
             },
             render() {
@@ -494,18 +510,34 @@ let subWeapon = 0;
                         this.image.height
                     );
                 }
-                if (this.subWeapon) { // not zero
-                    context.drawImage(
-                        subWeaponImages[this.subWeapon],
-                        0,
-                        yy,
-                        this.image.width,
-                        this.image.height
-                    );
-                }
+                // // @ifdef SUBWEAPON
+                // if (this.subWeapon) { // not zero
+                //     context.drawImage(
+                //         subWeaponImages[this.subWeapon],
+                //         0,
+                //         yy,
+                //         this.image.width,
+                //         this.image.height
+                //     );
+                // }
+                // // @endif
             },
         });
         entities.push(entity);
+    }
+
+    function getFreeSpace() {
+        for (let trial = 0; trial < 10; trial++) {
+            const pos = {
+                x: Math.random() * (canvas.width - 100) + 50,
+                y: Math.random() * (canvas.height - 100) + 50,
+            };
+            const spawnWidth = 64;
+
+            if (!entities.some(entity => entity.position.distance(pos) < entity.width / 2 + spawnWidth / 2)) {
+                return pos
+            }
+        }
     }
 
     function HandleSpawnTick() {
@@ -515,17 +547,11 @@ let subWeapon = 0;
         const [waveTime, maxEnemyCount, spawnCount, ...list] = waves[waveID] ?? waves[waves.length - 1];
 
         for (let i = 0; i < (enemyCount > maxEnemyCount ? 2 : spawnCount); i++) {
-            for (let trial = 0; trial < 10; trial++) {
-                const x = Math.random() * (canvas.width - 100) + 50;
-                const y = Math.random() * (canvas.height - 100) + 50;
-                const spawnWidth = 64;
-
-                if (!entities.some(entity => entity.position.distance({ x, y }) < entity.width / 2 + spawnWidth / 2)) {
-                    spawnGhostFire.call({ x, y }, { x: 0, y: 0 }, list[(Math.random() * list.length) | 0]).hp = 50 * ENEMY_RESPAWN_TIME;
-                    enemyCount++;
-                    break;
-                }
-            }
+            const freeSpace = getFreeSpace();
+            if (!freeSpace) continue;
+            spawnGhostFire.call(freeSpace, { x: 0, y: 0 }, list[(Math.random() * list.length) | 0]).hp = 50 * ENEMY_RESPAWN_TIME;
+            enemyCount++;
+            break;
         }
         if (Date.now() <= nextWaveTime) {
             waveID++;
@@ -859,7 +885,7 @@ let subWeapon = 0;
 
                 if (pointerPressed('left') && Date.now() >= player.nextCanShoot) {
                     // console.log('pointerPressed', mainWeapon);
-                    if (currentDimension == PHYSICAL_DIMENSION && mainWeapon == MAIN_DUAL_PISTOL) { // dual pistol
+                    if (currentDimension == PHYSICAL_DIMENSION && mainWeapon == MAIN_DUAL_PISTOL) {
                         const bulletSpeed = 20;
                         const bullet = playerBulletPool.get({
                             /* #IfDev */
@@ -885,11 +911,42 @@ let subWeapon = 0;
                         player.nextCanShoot = Date.now() + 200;
                         audio.play('shoot');
                     }
+                    if (currentDimension == PHYSICAL_DIMENSION && mainWeapon == MAIN_MACHINE_GUN) {
+                        const bulletSpeed = 20;
+                        const bulletRotation = rotation + Math.random() * 1 - 0.5;
+                        const bullet = playerBulletPool.get({
+                            /* #IfDev */
+                            name: 'bullet',
+                            /* #EndIfDev */
+                            x: player.x + Math.cos(rotation + 0.4) * 12,               // starting x,y position of the sprite
+                            y: player.y + Math.sin(rotation + 0.4) * 12,
+                            color: colors.white,  // fill color of the sprite rectangle
+                            width: 8,           // width and height of the sprite rectangle
+                            height: 2,
+                            dx: Math.cos(bulletRotation) * bulletSpeed,
+                            dy: Math.sin(bulletRotation) * bulletSpeed,
+                            rotation: bulletRotation,
+                            ttl: 3000,
+                            anchor: { x: 0.5, y: 0.5 },
+                            update: bulletUpdate,
+                            // custom properties
+                            dimension: player.dimension,
+                            bulletSpeed,
+                            team: TEAM_PLAYER,
+                        });
+                        player.nextCanShoot = Date.now() + 100;
+                        audio.play('shoot');
+                    }
                 }
             }
             HandleSpawnTick();
 
 
+            // energy
+            if (currentDimension == PHYSICAL_DIMENSION && energy >= levelUpEnergyGoal && !entities.some(e => e.box == 1)) {
+                const pos = getFreeSpace();
+                spawnBox(pos.x, pos.y, MAIN_MACHINE_GUN);
+            }
             // if (currentDimension == PHYSICAL_DIMENSION && energy >= respawnEnergyGoal) {
             //     audio.play('respawn');
 
