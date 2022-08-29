@@ -220,9 +220,9 @@ let subWeapon = 0;
             y: Math.sin(rotation),
         }
     }
-    function dist(a, b) { // not using it saves more space ?!
-        return Math.hypot(a.x - b.x, a.y - b.y);
-    }
+    // function dist(a, b) { // not using it saves more space ?!
+    //     return Math.hypot(a.x - b.x, a.y - b.y);
+    // }
     function spawnBasicEnemy() {
         // console.log('spawnBasicEnemy', this.x, this.y);
         const entity = Sprite({
@@ -443,7 +443,7 @@ let subWeapon = 0;
             mainWeapon: _mainWeapon,
             subWeapon: _subWeapon,
             update() {
-                if (Math.hypot(player.x - this.x, player.y - this.y) < this.width / 2 + player.width / 2) {
+                if (player.position.distance(this) < this.width / 2 + player.width / 2) {
                     // console.log('player collect box');
 
                     if (this.mainWeapon) { // not zero
@@ -520,7 +520,7 @@ let subWeapon = 0;
                 const y = Math.random() * (canvas.height - 100) + 50;
                 const spawnWidth = 64;
 
-                if (!entities.some(entity => Math.hypot(x - entity.x, y - entity.y) < entity.width / 2 + spawnWidth / 2)) {
+                if (!entities.some(entity => entity.position.distance({ x, y }) < entity.width / 2 + spawnWidth / 2)) {
                     spawnGhostFire.call({ x, y }, { x: 0, y: 0 }, list[Math.floor(Math.random() * list.length)]).hp = 50 * ENEMY_RESPAWN_TIME;
                     enemyCount++;
                     break;
@@ -538,7 +538,7 @@ let subWeapon = 0;
         this.advance(dt);
         const entity = entities
             .filter(entity => entity.hp && entity.team !== this.team && entity.dimension === this.dimension)
-            .find(entity => Math.hypot(this.x - entity.x, this.y - entity.y) < entity.width / 2 + this.width / 2)
+            .find(entity => entity.position.distance(this) < entity.width / 2 + this.width / 2)
             ;
         if (entity) {
             /* #IfDev */
@@ -570,7 +570,7 @@ let subWeapon = 0;
             this.ttl = 0;
 
         }
-        if (currentDimension == PHYSICAL_DIMENSION && Math.hypot(this.x - player.x, this.y - player.y) < player.width / 2 + this.width / 2) {
+        if (currentDimension == PHYSICAL_DIMENSION && player.position.distance(this) < player.width / 2 + this.width / 2) {
             enemyBulletPool.getAliveObjects().forEach(b => b.ttl = 0);
             // kill player into spectral dimension
 
@@ -672,7 +672,7 @@ let subWeapon = 0;
 
                 // ai targeting: chase, avoid, wander
                 if (thisEntity.targetX != null) {
-                    const distToPlayer = Math.hypot(thisEntity.x - player.x, thisEntity.y - player.y);
+                    const distToPlayer = player.position.distance(thisEntity);
 
                     if (thisEntity.b?.includes('<') && Date.now() > thisEntity.aiNextTick && thisEntity.dimension == player.dimension) {
                         // chase target
@@ -728,7 +728,7 @@ let subWeapon = 0;
                             render() {
                                 context.fillStyle = colors.orange;
                                 context.beginPath();
-                                context.ellipse(this.width / 2, this.height / 2, 5, 3, /*this.seed * Math.PI +*/ Math.PI * 2 * (Date.now() % 1000) / 1000, 0, 2 * Math.PI);
+                                context.ellipse(this.width / 2, this.height / 2, 5, 3, /* this.seed * Math.PI + */ Math.PI * 2 * (Date.now() % 1000) / 1000, 0, 2 * Math.PI);
                                 context.fill();
                             },
 
@@ -765,7 +765,7 @@ let subWeapon = 0;
 
 
                 // collision
-                const collisions = entities.filter(entity => entity != thisEntity && Math.hypot(thisEntity.x - entity.x, thisEntity.y - entity.y) < entity.width / 2 + thisEntity.width / 2);
+                const collisions = entities.filter(entity => entity != thisEntity && entity.position.distance(thisEntity) < entity.width / 2 + thisEntity.width / 2);
 
                 const enemyCollideWithPlayer = collisions.some(entity => entity == player);
                 // if spectral enemy collides spectral player
@@ -811,9 +811,8 @@ let subWeapon = 0;
                     }
                     // knockback player
 
-                    const dist = Math.hypot(player.x - thisEntity.x, player.y - thisEntity.y);
-                    player.knockDx = (player.x - thisEntity.x) / dist * 12;
-                    player.knockDy = (player.y - thisEntity.y) / dist * 12;
+                    player.knockDx = (player.x - thisEntity.x) / player.position.distance(thisEntity) * 12;
+                    player.knockDy = (player.y - thisEntity.y) / player.position.distance(thisEntity) * 12;
                     /* #IfDev */
                     console.log('knock player', player.knockDx, player.knockDy);
                     /* #EndIfDev */
@@ -821,7 +820,7 @@ let subWeapon = 0;
 
                 if (thisEntity != player && collisions.length) {
                     const closest = collisions[0];
-                    const dist = Math.hypot(thisEntity.x - closest.x, thisEntity.y - closest.y);
+                    const dist = closest.position.distance(thisEntity);
                     if (dist > 0.01) {
                         thisEntity.x += (thisEntity.x - closest.x) / dist * 0.2;
                         thisEntity.y += (thisEntity.y - closest.y) / dist * 0.2;
@@ -916,11 +915,10 @@ let subWeapon = 0;
 
                     // radial knockback
                     entities
-                        .filter(entity => entity != player && Math.hypot(player.x - entity.x, player.y - entity.y) < 100)
+                        .filter(entity => entity != player && player.position.distance(entity) < 100)
                         .forEach(entity => {
-                            const dist = Math.hypot(player.x - entity.x, player.y - entity.y);
-                            entity.knockDx = (entity.x - player.x) / dist * 12;
-                            entity.knockDy = (entity.y - player.y) / dist * 12;
+                            entity.knockDx = (entity.x - player.x) / player.position.distance(entity) * 12;
+                            entity.knockDy = (entity.y - player.y) / player.position.distance(entity) * 12;
                         });
                     entities
                         .filter(entity => entity.b?.includes('s'))
