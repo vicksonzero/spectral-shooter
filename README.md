@@ -95,7 +95,7 @@ Assets
 - [x] use 8-bit sound effects
 
 Language
-- [x] use esm + not-ts + webpack5
+- [x] use esm + js + webpack5
 - [x] use base64 for images. no loading
 - [x] use zipping and size-counting
 
@@ -107,13 +107,13 @@ Language
 - [x] WASD, shoot machine gun with mouse
 - [x] basic enemy, turn into ghost, ghost turns back into basic enemy
 - [x] shoot enemy, melee ghost
-- [ ] enemy shoots, kills player in 1 shot
+- [x] enemy shoots, kills player in 1 shot
 - [x] death transitions
 
 ## Milestone 4 (Game Rules)
 - [x] Wave 1
-- [ ] GameOver, Basic Stats
-- [ ] UI for spectral populations (needed vs available)
+- [x] GameOver, Basic Stats
+- [x] UI for spectral populations (needed vs available)
 - [ ] Tutorial (text and triggers)
 - [ ] Score, multiplier, timer
 - [ ] Wave 5 with Shielded as boss
