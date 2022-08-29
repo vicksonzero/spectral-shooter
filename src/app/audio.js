@@ -87,7 +87,7 @@ export class ArcadeAudio {
 
     play(key, volume = this.volume) {
         var sound = this.sounds[key];
-        var soundData = sound.length > 1 ? sound[Math.floor(Math.random() * sound.length)] : sound[0];
+        var soundData = sound.length > 1 ? sound[(Math.random() * sound.length) | 0] : sound[0];
         soundData.pool[soundData.tick].volume = volume;
         soundData.pool[soundData.tick].play().catch(e => {/* do nothing */ });
         soundData.tick < soundData.count - 1 ? soundData.tick++ : soundData.tick = 0;

@@ -521,7 +521,7 @@ let subWeapon = 0;
                 const spawnWidth = 64;
 
                 if (!entities.some(entity => entity.position.distance({ x, y }) < entity.width / 2 + spawnWidth / 2)) {
-                    spawnGhostFire.call({ x, y }, { x: 0, y: 0 }, list[Math.floor(Math.random() * list.length)]).hp = 50 * ENEMY_RESPAWN_TIME;
+                    spawnGhostFire.call({ x, y }, { x: 0, y: 0 }, list[(Math.random() * list.length) | 0]).hp = 50 * ENEMY_RESPAWN_TIME;
                     enemyCount++;
                     break;
                 }
@@ -1074,8 +1074,8 @@ let subWeapon = 0;
 
             const padding = 20;
             const barWidth = (canvas.width - padding - padding) * Math.min(1, energy / levelUpEnergyGoal);
-            const respawnEnergyGoalX = Math.floor(padding + (canvas.width - padding - padding) * respawnEnergyGoal / levelUpEnergyGoal);
-            const levelUpEnergyGoalX = Math.floor(padding + (canvas.width - padding - padding));
+            const respawnEnergyGoalX = (padding + (canvas.width - padding - padding) * respawnEnergyGoal / levelUpEnergyGoal) | 0;
+            const levelUpEnergyGoalX = (padding + (canvas.width - padding - padding)) | 0;
 
             context.globalAlpha = 0.7;
             context.fillStyle = colors.darkGray;
@@ -1121,7 +1121,7 @@ let subWeapon = 0;
                 context.textAlign = 'center';
                 context.fillStyle = colors.white;
                 context.globalAlpha = 0.5;
-                context.fillText(Math.floor((respawnEnergyTimeLimit - Date.now()) / 1000), canvas.width / 2, canvas.height / 2);
+                context.fillText(((respawnEnergyTimeLimit - Date.now()) / 1000) | 0, canvas.width / 2, canvas.height / 2);
             }
 
 
