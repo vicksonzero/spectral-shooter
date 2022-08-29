@@ -17,8 +17,8 @@ export async function loadImages() {
         playerPhysical: await createImageAsync(imageList.tile077, colors.darkGray),
         playerSpectral: await createImageAsync(imageList.tile077, colors.lightGray),
 
-        boxWhite: await createImageAsync(imageList.tile121, colors.white),
-        boxDarkGray: await createImageAsync(imageList.tile121, colors.lightGray),
+        // boxWhite: await createImageAsync(imageList.tile121, colors.white),
+        // boxDarkGray: await createImageAsync(imageList.tile121, colors.lightGray),
 
         dualPistolOrange: await createImageAsync(imageList.tile478_c, colors.orange),
         machineGunOrange: await createImageAsync(imageList.tile481, colors.orange),

@@ -99,10 +99,10 @@ let gunSide = 1; // 0, 1
         images.machineGunOrange,
         images.dualPistolOrange,
     ];
-    const subWeaponImages = [
-        '',
-        // images.spiritRevolverBlue,
-    ];
+    // const subWeaponImages = [
+    //     '',
+    //     // images.spiritRevolverBlue,
+    // ];
 
     const audio = new ArcadeAudio();
     audio.volume = 0; // TODO: make mute button
@@ -434,10 +434,9 @@ let gunSide = 1; // 0, 1
         // return effect;
     }
 
-    function spawnBox(x, y, _mainWeapon, _subWeapon) {
+    function spawnBox(x, y, _mainWeapon/*, _subWeapon*/) {
         const entity = Sprite({
             x, y,
-            image: images.boxWhite,
             box: 1,
             mainWeapon: _mainWeapon,
             // // @ifdef SUBWEAPON
@@ -481,21 +480,12 @@ let gunSide = 1; // 0, 1
                 const _y = - this.image.height / 2;
                 // @ifdef SPRITE_IMAGE
                 if (this.image) {
-                    // context.fillStyle = colors.blue;
-                    // context.fillRect(_x, _y, this.image.width, this.image.height);
                     context.fillStyle = colors.darkGray;
                     context.globalAlpha = 0.7;
                     context.beginPath();
                     context.ellipse(0, 0 + this.height - 10, 6, 2, 0, 0, Math.PI * 2);
                     context.fill();
                     context.globalAlpha = 1;
-                    // context.drawImage(
-                    //     this.image,
-                    //     0,
-                    //     0,
-                    //     this.image.width,
-                    //     this.image.height
-                    // );
                 }
                 // @endif
                 // draw bounding weapon
@@ -506,8 +496,8 @@ let gunSide = 1; // 0, 1
                         mainWeaponImages[this.mainWeapon],
                         _x,
                         yy,
-                        this.image.width,
-                        this.image.height
+                        mainWeaponImages[this.mainWeapon].width,
+                        mainWeaponImages[this.mainWeapon].height
                     );
                 }
                 // // @ifdef SUBWEAPON
@@ -516,8 +506,8 @@ let gunSide = 1; // 0, 1
                 //         subWeaponImages[this.subWeapon],
                 //         0,
                 //         yy,
-                //         this.image.width,
-                //         this.image.height
+                //         subWeaponImages[this.subWeapon].width,
+                //         subWeaponImages[this.subWeapon].height
                 //     );
                 // }
                 // // @endif
