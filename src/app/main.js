@@ -89,6 +89,16 @@ let gunSide = 1; // 0, 1
 // // @endif
 
 
+// stats:
+let time = 0;
+// let score = score;
+// let wave index = waveId;
+let killsA = 0;
+let killsB = 0;
+let countCompleteKills = 0;
+let timeSpentInSpectralWorld = 0;
+
+
 
 (async () => {
     // loading
@@ -439,6 +449,7 @@ let gunSide = 1; // 0, 1
             x, y,
             box: 1,
             mainWeapon: _mainWeapon,
+            image: images.dualPistolOrange,
             // // @ifdef SUBWEAPON
             // subWeapon: _subWeapon,
             // // @endif
