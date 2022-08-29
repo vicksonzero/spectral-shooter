@@ -126,12 +126,12 @@ let timeSpentInSpectralWorld = 0;
 
     const waves = [
         // [waveTime (sec), spawnInterval (ms), maxEnemyCount, spawnCount, ...list],
-        [20, 3000, 10, 3, spawnBasicEnemy],
-        [60, 3000, 30, 3, spawnBasicEnemy, spawnBasicEnemy, spawnShooterEnemy],
-        [60, 3000, 50, 3, spawnBasicEnemy, spawnShooterEnemy],
-        [60, 3000, 80, 3, spawnBasicEnemy, spawnShooterEnemy, spawnShooterEnemy],
-        [60, 3000, 80, 5, spawnBasicEnemy, spawnShooterEnemy, spawnShooterEnemy],
-        [60, 3000, 100, 7, spawnBasicEnemy, spawnShooterEnemy, spawnShooterEnemy],
+        [10 /*15*/, 2000, 10, 3, spawnBasicEnemy],
+        [40, 3000, 30, 3, spawnBasicEnemy, spawnBasicEnemy, spawnShooterEnemy],
+        [40, 3000, 50, 3, spawnBasicEnemy, spawnShooterEnemy],
+        [40, 3000, 80, 3, spawnBasicEnemy, spawnShooterEnemy, spawnShooterEnemy],
+        [30, 2500, 80, 5, spawnBasicEnemy, spawnShooterEnemy, spawnShooterEnemy, spawnFatEnemy],
+        [30, 2000, 100, 7, spawnBasicEnemy, spawnShooterEnemy, spawnShooterEnemy, spawnFatEnemy],
     ];
 
     let waveID = 0;
@@ -299,7 +299,8 @@ let timeSpentInSpectralWorld = 0;
             anchor: { x: 0.5, y: 0.5 },
 
             // custom properties
-            hp: 5,
+            hp: 15,
+            size: 32,
             images: [images.basicEnemyPhysical, images.basicEnemySpectral],
             dimension: PHYSICAL_DIMENSION,
             b: 'dw<.',
@@ -307,7 +308,7 @@ let timeSpentInSpectralWorld = 0;
             onDeathSpawn() { spawnGhostFire.call(this, randomUnitVector(), spawnBasicEnemy); },
             targetX: this.x,
             targetY: this.y,
-            speed: 1,
+            speed: 0.65,
             aiNextTick: Date.now(),
             hitEffectUntil: Date.now(),
             team: TEAM_ENEMY,
@@ -319,8 +320,8 @@ let timeSpentInSpectralWorld = 0;
                         this.image,
                         0,
                         0,
-                        this.image.width,
-                        this.image.height
+                        this.size,
+                        this.size
                     );
                 }
                 // @endif
@@ -589,7 +590,7 @@ let timeSpentInSpectralWorld = 0;
             };
             const spawnWidth = 64;
 
-            if (!entities.some(entity => entity.position.distance(pos) < entity.width / 2 + spawnWidth / 2)) {
+            if (!entities.some(entity => entity.position.distance(pos) < (entity.size ?? entity.width) / 2 + spawnWidth / 2)) {
                 return pos
             }
         }
@@ -632,7 +633,7 @@ let timeSpentInSpectralWorld = 0;
         this.advance(dt);
         const entity = entities
             .filter(entity => entity.hp && entity.team !== this.team && entity.dimension === this.dimension)
-            .find(entity => entity.position.distance(this) < entity.width / 2 + this.width / 2)
+            .find(entity => entity.position.distance(this) < (entity.size ?? entity.width) / 2 + this.width / 2)
             ;
         if (entity) {
             /* #IfDev */
@@ -773,7 +774,7 @@ let timeSpentInSpectralWorld = 0;
                         const rotation = angleToTarget(player, thisEntity) - Math.PI / 2 + Math.random() - 0.5;
                         thisEntity.targetX = player.x + Math.cos(rotation) * thisEntity.strafe;
                         thisEntity.targetY = player.y + Math.sin(rotation) * thisEntity.strafe;
-                        thisEntity.speed = 1;
+                        thisEntity.s = 1 * thisEntity.speed;
                         if (thisEntity.strafe > 0) thisEntity.aiNextTick = Date.now() + 3000;
 
                     } else if (thisEntity.b?.includes('>') && thisEntity.dimension == player.dimension) {
@@ -781,7 +782,7 @@ let timeSpentInSpectralWorld = 0;
                         if (distToPlayer < 100) {
                             thisEntity.targetX = thisEntity.x + (thisEntity.x - player.x) / distToPlayer * 100;
                             thisEntity.targetY = thisEntity.y + (thisEntity.y - player.y) / distToPlayer * 100;
-                            thisEntity.speed = 0.5;
+                            thisEntity.s = 0.5 * thisEntity.speed;
                             thisEntity.aiNextTick = Date.now() + 2000;
 
                         } else if (Date.now() > thisEntity.aiNextTick) {
@@ -789,7 +790,7 @@ let timeSpentInSpectralWorld = 0;
                             const randomDistance = Math.random() * 32 + 16;
                             thisEntity.targetX = thisEntity.x + randomVector.x * randomDistance;
                             thisEntity.targetY = thisEntity.y + randomVector.y * randomDistance;
-                            thisEntity.speed = 0.5;
+                            thisEntity.s = 0.5 * thisEntity.speed;
                             thisEntity.aiNextTick = Date.now() + 2000;
                         }
                     } else if (thisEntity.b?.includes('.') && Date.now() > thisEntity.aiNextTick) {
@@ -798,7 +799,7 @@ let timeSpentInSpectralWorld = 0;
                         const randomDistance = Math.random() * 32 + 16;
                         thisEntity.targetX = thisEntity.x + randomVector.x * randomDistance;
                         thisEntity.targetY = thisEntity.y + randomVector.y * randomDistance;
-                        thisEntity.speed = 0.5;
+                        thisEntity.s = 0.5 * thisEntity.speed;
                         thisEntity.aiNextTick = Date.now() + 2000;
                     }
                     // shoot enemy bullet
@@ -839,11 +840,11 @@ let timeSpentInSpectralWorld = 0;
                     }
                     // move
                     const distToTarget = Math.hypot(thisEntity.x - thisEntity.targetX, thisEntity.y - thisEntity.targetY);
-                    if (distToTarget < thisEntity.speed) {
+                    if (distToTarget < (thisEntity.s ?? thisEntity.speed)) {
                         thisEntity.x = thisEntity.targetX, thisEntity.y = thisEntity.targetY;
                     } else {
-                        thisEntity.x += (thisEntity.targetX - thisEntity.x) / distToTarget * thisEntity.speed;
-                        thisEntity.y += (thisEntity.targetY - thisEntity.y) / distToTarget * thisEntity.speed;
+                        thisEntity.x += (thisEntity.targetX - thisEntity.x) / distToTarget * (thisEntity.s ?? thisEntity.speed);
+                        thisEntity.y += (thisEntity.targetY - thisEntity.y) / distToTarget * (thisEntity.s ?? thisEntity.speed);
                     }
                 }
 
@@ -859,7 +860,10 @@ let timeSpentInSpectralWorld = 0;
 
 
                 // collision
-                const collisions = entities.filter(entity => entity != thisEntity && entity.position.distance(thisEntity) < entity.width / 2 + thisEntity.width / 2);
+                const collisions = entities.filter(entity => (
+                    entity != thisEntity &&
+                    entity.position.distance(thisEntity) < (entity.size ?? entity.width) / 2 + (thisEntity.size ?? thisEntity.width) / 2
+                ));
 
                 const enemyCollideWithPlayer = collisions.some(entity => entity == player);
                 // if spectral enemy collides spectral player
