@@ -1,55 +1,59 @@
-//@ts-check
-
 import * as imageList from './imageList';
 import { colors } from './colors'
 
 export async function loadImages() {
     return {
-        basicEnemyPhysical: await createImageAsync(imageList.tile028, colors.darkGray),
-        basicEnemySpectral: await createImageAsync(imageList.tile028, colors.gray),
+        basicEnemyPhysical: decompress(imageList.tile028, colors.darkGray),
+        basicEnemySpectral: decompress(imageList.tile028, colors.gray),
 
-        shooterEnemyPhysical: await createImageAsync(imageList.tile080, colors.darkGray),
-        shooterEnemySpectral: await createImageAsync(imageList.tile080, colors.gray),
-        
-        ghostFirePhysical: await createImageAsync(imageList.tile505, colors.lightGray),
-        ghostFireSpectral: await createImageAsync(imageList.tile505, colors.blue),
+        shooterEnemyPhysical: decompress(imageList.tile080, colors.darkGray),
+        shooterEnemySpectral: decompress(imageList.tile080, colors.gray),
 
-        playerPhysical: await createImageAsync(imageList.tile077, colors.darkGray),
-        playerSpectral: await createImageAsync(imageList.tile077, colors.lightGray),
+        ghostFirePhysical: decompress(imageList.tile505, colors.lightGray),
+        ghostFireSpectral: decompress(imageList.tile505, colors.blue),
 
-        // boxWhite: await createImageAsync(imageList.tile121, colors.white),
-        // boxDarkGray: await createImageAsync(imageList.tile121, colors.lightGray),
+        playerPhysical: decompress(imageList.tile077, colors.darkGray),
+        playerSpectral: decompress(imageList.tile077, colors.lightGray),
 
-        dualPistolOrange: await createImageAsync(imageList.tile478_c, colors.orange),
-        machineGunOrange: await createImageAsync(imageList.tile481, colors.orange),
-        // spiritRevolverBlue: await createImageAsync(imageList.tile479, colors.blue),
+        // boxWhite: decompress(imageList.tile121, colors.white),
+        // boxDarkGray: decompress(imageList.tile121, colors.lightGray),
 
-        floorTile1: await createImageAsync(imageList.tile002, colors.lightGray),
-        // floorTile2: await createImageAsync(imageList.tile002, colors.lightGray),
+        dualPistolOrange: decompress(imageList.tile478_c, colors.orange),
+        machineGunOrange: decompress(imageList.tile481, colors.orange),
+        // spiritRevolverBlue: decompress(imageList.tile479, colors.blue),
+
+        floorTile1: decompress(imageList.tile002, colors.lightGray),
+        // floorTile2: decompress(imageList.tile002, colors.lightGray),
     };
 }
 
-async function createImageAsync(src, color) {
-    const image = new Image();
-    const bufferCanvas = document.createElement('canvas');
 
-    await new Promise(resolve => {
-        image.src = src;
-        image.onload = resolve;
-    });
+function decompress(bitArray2D, color = '#fff') {
+    const [width, ...compressed] = bitArray2D;
 
-    bufferCanvas.width = image.width;
-    bufferCanvas.height = image.height;
-    // @ts-ignore
-    /** @type {CanvasRenderingContext2D}  */ const btx = bufferCanvas.getContext('2d');
+    const canvas = document.createElement('canvas');
+    canvas.width = width;
+    canvas.height = compressed.length;
+    const ctx = canvas.getContext('2d');
+    ctx.fillStyle = color;
 
-    // fill offscreen buffer with the tint color
-    btx.fillStyle = color;
-    btx.fillRect(0, 0, bufferCanvas.width, bufferCanvas.height);
+    for (let y = 0; y < compressed.length; y++) {
+        for (let x = 0; x < width; x++) {
+            const pixel = compressed[y] & (1 << x);
+            if (pixel) ctx.fillRect(x, y, 1, 1);
+        }
+    }
 
-    // destination atop makes a result with an alpha channel identical to fg, but with all pixels retaining their original color *as far as I can tell*
-    btx.globalCompositeOperation = "destination-atop";
-    btx.drawImage(image, 0, 0);
-
-    return bufferCanvas;
+    // return canvas.toDataURL('image/png');
+    return canvas;
 }
+
+// async function createImageAsync(src) {
+//     const image = new Image();
+//     await new Promise(resolve => {
+//         image.src = src;
+//         image.onload = resolve;
+//     });
+
+//     return image;
+// }

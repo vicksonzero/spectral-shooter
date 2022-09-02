@@ -115,7 +115,7 @@ let timeSpentInSpectralWorld = 0;
     // ];
 
     const audio = new ArcadeAudio();
-    // audio.volume = 0; // TODO: make mute button
+    audio.volume = 0; // TODO: make mute button
 
     // init
     let { canvas, context } = init();

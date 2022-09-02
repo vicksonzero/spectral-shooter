@@ -36,6 +36,8 @@
     "webpack-strip-block": "^0.3.0"
   },
   "dependencies": {
-    "kontra": "^8.0.0"
+    "canvas": "^2.9.3",
+    "kontra": "^8.0.0",
+    "readdirp": "^3.6.0"
   }
 }

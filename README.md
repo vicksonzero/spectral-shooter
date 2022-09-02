@@ -11,6 +11,16 @@ Made for the js13k game jam 2022
 - Kontra.js
 - Webpack
 
+# How to compress images
+
+in the project directory, run:
+
+```bash
+node ./scripts/compress1BitImages.js
+```
+
+Copy the result into `imageList.js`, decompress with the `decompress(imgArrayStr, color)` script included in `compress1BitImages.js`
+
 
 # How to make sfx
 
