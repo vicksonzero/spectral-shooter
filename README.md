@@ -130,6 +130,9 @@ Language
 - [ ] sfx and vfx for box spawning
   - [ ] drop height for box
 - [ ] vfx for spectral dash
+- [ ] vfx for blurring and glowing
+  - [ ] glowing melee enemy
+  - [ ] 
 
 
 ## Public testing
