@@ -115,7 +115,7 @@ let timeSpentInSpectralWorld = 0;
     // ];
 
     const audio = new ArcadeAudio();
-    audio.volume = 0; // TODO: make mute button
+    // audio.volume = 0; // TODO: make mute button
 
     // init
     let { canvas, context } = init();
@@ -262,7 +262,7 @@ let timeSpentInSpectralWorld = 0;
             hitEffectUntil: Date.now(),
             team: TEAM_ENEMY,
             render() {
-                context.globalAlpha = this.hitEffectUntil > Date.now() ? 0.7 : 1;
+                context.globalAlpha = this.hitEffectUntil > Date.now() ? 0.5 : 1;
                 // @ifdef SPRITE_IMAGE
                 if (this.image) {
                     context.drawImage(
@@ -313,7 +313,7 @@ let timeSpentInSpectralWorld = 0;
             hitEffectUntil: Date.now(),
             team: TEAM_ENEMY,
             render() {
-                context.globalAlpha = this.hitEffectUntil > Date.now() ? 0.7 : 1;
+                context.globalAlpha = this.hitEffectUntil > Date.now() ? 0.5 : 1;
                 // @ifdef SPRITE_IMAGE
                 if (this.image) {
                     context.drawImage(
@@ -365,7 +365,7 @@ let timeSpentInSpectralWorld = 0;
             team: TEAM_ENEMY,
             nextCanShoot: Date.now() + 1500,
             render() {
-                context.globalAlpha = this.hitEffectUntil > Date.now() ? 0.7 : 1;
+                context.globalAlpha = this.hitEffectUntil > Date.now() ? 0.5 : 1;
                 // @ifdef SPRITE_IMAGE
                 if (this.image) {
                     context.drawImage(

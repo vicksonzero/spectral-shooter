@@ -17,16 +17,18 @@ body {
   margin: 0 auto;
   padding: 1em;
   box-sizing: border-box;
+  padding-bottom: 64px;
 }
 
 #game {
-  width: 720px;
-  height: 480px;
+  width: 960px;
+  height: 640px;
   position: relative;
 }
 #a {
   position: absolute;
-  width: 720px;
-  height: 480px;
+  width: 960px;
+  height: 640px;
   background: #F5F5F5;
+  image-rendering: pixelated;
 }
