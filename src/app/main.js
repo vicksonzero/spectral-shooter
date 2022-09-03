@@ -97,7 +97,7 @@ let timeSpentInSpectralWorld = 0;
 
 
 
-(async () => {
+window.onload = (async () => {
     // loading
     const images = await loadImages();
     const mainWeaponImages = [
@@ -1407,4 +1407,4 @@ let timeSpentInSpectralWorld = 0;
     });
 
     loop.start();    // start the game
-})();
+});
