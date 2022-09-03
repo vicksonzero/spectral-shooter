@@ -24,7 +24,7 @@ import { ArcadeAudio } from './audio';
  * // b=box()     // gives item
  */
 
-const DIFFICULTY_RATIO = 1.1; // GoldenRatio=1.618
+const DIFFICULTY_RATIO = 1.3; // GoldenRatio=1.618
 
 const BACKGROUND_COLOR = colors.bgGray;// colors.bgBrown;
 const PHYSICAL_DIMENSION = 0;
@@ -127,10 +127,9 @@ let timeSpentInSpectralWorld = 0;
     const waves = [
         // [waveTime (sec), spawnInterval (ms), maxEnemyCount, spawnCount, ...list],
         [10 /*15*/, 2000, 10, 3, spawnBasicEnemy],
-        [40, 3000, 30, 3, spawnBasicEnemy, spawnBasicEnemy, spawnShooterEnemy],
-        [40, 3000, 50, 3, spawnBasicEnemy, spawnShooterEnemy],
-        [40, 3000, 80, 3, spawnBasicEnemy, spawnShooterEnemy, spawnShooterEnemy],
-        [30, 2500, 80, 5, spawnBasicEnemy, spawnShooterEnemy, spawnShooterEnemy, spawnFatEnemy],
+        [30, 3000, 30, 3, spawnBasicEnemy, spawnBasicEnemy, spawnShooterEnemy],
+        [30, 3000, 50, 3, spawnBasicEnemy, spawnShooterEnemy],
+        [30, 3000, 30, 5, spawnBasicEnemy, spawnShooterEnemy, spawnShooterEnemy, spawnFatEnemy],
         [30, 2000, 100, 7, spawnBasicEnemy, spawnShooterEnemy, spawnShooterEnemy, spawnFatEnemy],
     ];
 
@@ -392,7 +391,7 @@ let timeSpentInSpectralWorld = 0;
     };
     function spawnGhostFire(knockbackDir, spawnEntity) {
         /* #IfDev */
-        console.log('spawnGhostFire', this.x, this.y, knockbackDir.x, knockbackDir.y);
+        // console.log('spawnGhostFire', this.x, this.y, knockbackDir.x, knockbackDir.y);
         /* #EndIfDev */
         const entity = Sprite({
             /* #IfDev */
@@ -458,7 +457,7 @@ let timeSpentInSpectralWorld = 0;
          * 4 = spectral dash after-images: sprite fade out
          */
         /* #IfDev */
-        console.log('spawnEffect', type, position, rotation, speed, image, ttl);
+        // console.log('spawnEffect', type, position, rotation, speed, image, ttl);
         /* #EndIfDev */
         const effect = effectsPool.get({
             /* #IfDev */
@@ -608,7 +607,7 @@ let timeSpentInSpectralWorld = 0;
     }
 
     function getFreeSpace() {
-        for (let trial = 0; trial < 10; trial++) {
+        for (let trial = 0; trial < 100; trial++) {
             const pos = {
                 x: Math.random() * (canvas.width - 100) + 50,
                 y: Math.random() * (canvas.height - 100) + 50,
@@ -634,13 +633,13 @@ let timeSpentInSpectralWorld = 0;
         ] = waves[waveID] ?? waves[waves.length - 1];
 
 
-        console.log('HandleSpawnTick', {
-            waveTime,
-            spawnInterval,
-            maxEnemyCount,
-            spawnCount,
-            list: list.length,
-        });
+        // console.log('HandleSpawnTick', {
+        //     waveTime,
+        //     spawnInterval,
+        //     maxEnemyCount,
+        //     spawnCount,
+        //     list: list.length,
+        // });
         for (let i = 0; i < (enemyCount > maxEnemyCount ? 1 : spawnCount); i++) {
             const freeSpace = getFreeSpace();
             if (!freeSpace) continue;
@@ -649,7 +648,8 @@ let timeSpentInSpectralWorld = 0;
         }
         if (Date.now() >= nextWaveTime) {
             waveID++;
-            nextWaveTime = Date.now() + waves[waveID] ?? waves[--waveID][0] * 1000;
+            console.log('Wave up!')
+            nextWaveTime = Date.now() + (waves[waveID] ?? waves[--waveID])[0] * 1000;
         }
 
         nextSpawnTick = Date.now() + spawnInterval + Math.random() * 2000;
@@ -662,7 +662,7 @@ let timeSpentInSpectralWorld = 0;
             ;
         if (entity) {
             /* #IfDev */
-            console.log('collision');
+            // console.log('collision');
             /* #EndIfDev */
 
             // damage enemy
@@ -830,7 +830,7 @@ let timeSpentInSpectralWorld = 0;
                     // shoot enemy bullet
                     if (thisEntity.b?.includes('s') && currentDimension == thisEntity.dimension && distToPlayer < 250 && Date.now() >= thisEntity.nextCanShoot) {
                         /* #IfDev */
-                        console.log('enemy shoot');
+                        // console.log('enemy shoot');
                         /* #EndIfDev */
                         const rotation = angleToTarget(thisEntity, player) - Math.PI / 2;
 
@@ -937,7 +937,7 @@ let timeSpentInSpectralWorld = 0;
                     player.knockDx = (player.x - thisEntity.x) / player.position.distance(thisEntity) * 12;
                     player.knockDy = (player.y - thisEntity.y) / player.position.distance(thisEntity) * 12;
                     /* #IfDev */
-                    console.log('knock player', player.knockDx, player.knockDy);
+                    // console.log('knock player', player.knockDx, player.knockDy);
                     /* #EndIfDev */
                 }
 
@@ -1042,7 +1042,7 @@ let timeSpentInSpectralWorld = 0;
             // energy
             if (currentDimension == PHYSICAL_DIMENSION && energy >= levelUpEnergyGoal && !entities.some(e => e.box == 1)) {
                 const pos = getFreeSpace();
-                spawnBox(pos.x, pos.y, MAIN_MACHINE_GUN);
+                if (pos) spawnBox(pos.x, pos.y, MAIN_MACHINE_GUN);
             }
             // if (currentDimension == PHYSICAL_DIMENSION && energy >= respawnEnergyGoal) {
             //     audio.play('respawn');
@@ -1308,7 +1308,7 @@ let timeSpentInSpectralWorld = 0;
                 context2.fillText('Use mouse to aim, left click to shoot,', canvas2.width / 2, 520);
                 context2.fillText('Avoid physical enemies.', canvas2.width / 2, 540);
             }
-            else if (tutProgress == 2 && score < 300) {
+            else if (tutProgress == 2 && score < 300 && currentDimension == PHYSICAL_DIMENSION) {
                 context2.fillText(`Monsters can respawn from the dead, but so can you.`, canvas2.width / 2, 520);
                 context2.fillText(`Jump to the Spectral world to clear them for good!.`, canvas2.width / 2, 540);
             }
