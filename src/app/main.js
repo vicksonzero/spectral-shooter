@@ -453,7 +453,9 @@ let timeSpentInSpectralWorld = 0;
         /**
          * types:
          * 1 = enemy die effect: fly in direction + fade out
-         * 2 = enemy respawn effect: fly in direction + fade out
+         * 2 = enemy respawn effect: fly in direction + fade in
+         * 3 = box spawn effect: big circle close in
+         * 4 = spectral dash after-images: sprite fade out
          */
         /* #IfDev */
         console.log('spawnEffect', type, position, rotation, speed, image, ttl);
@@ -1105,7 +1107,7 @@ let timeSpentInSpectralWorld = 0;
             }
             // render some tiles
             context.globalAlpha = 0.4;
-            [
+            ;[
                 [16 * 5, 16 * 6],
                 [16 * 5, 16 * 7],
                 [16 * 6, 16 * 7],
@@ -1154,9 +1156,9 @@ let timeSpentInSpectralWorld = 0;
                 if (e.returnHp - e.hp < 180) {
                     context.fillStyle = colors.lightGray;
                     context.globalAlpha = 0.3;
-                    context.fillRect(e.x - e.width / 2, e.y + 12, e.width, 2);
+                    context.fillRect(e.x - e.width / 2 | 0, e.y + 12 | 0, e.width, 2);
                     context.globalAlpha = 1;
-                    context.fillRect(e.x - e.width / 2, e.y + 12, e.width * (180 - e.returnHp + e.hp) / 180, 2);
+                    context.fillRect(e.x - e.width / 2 | 0, e.y + 12 | 0, e.width * (180 - e.returnHp + e.hp) / 180, 2);
                 }
             });
 
