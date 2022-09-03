@@ -14,6 +14,7 @@ export async function loadImages() {
 
         playerPhysical: decompress(imageList.tile077, colors.darkGray),
         playerSpectral: decompress(imageList.tile077, colors.lightGray),
+        playerSpectralDash: decompress(imageList.tile077, colors.blue),
 
         // boxWhite: decompress(imageList.tile121, colors.white),
         // boxDarkGray: decompress(imageList.tile121, colors.lightGray),

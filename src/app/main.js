@@ -128,7 +128,8 @@ let timeSpentInSpectralWorld = 0;
         // [waveTime (sec), spawnInterval (ms), maxEnemyCount, spawnCount, ...list],
         [10 /*15*/, 2000, 10, 3, spawnBasicEnemy],
         [30, 3000, 30, 3, spawnBasicEnemy, spawnBasicEnemy, spawnShooterEnemy],
-        [30, 3000, 50, 3, spawnBasicEnemy, spawnShooterEnemy],
+        [20, 3000, 40, 3, spawnBasicEnemy, spawnShooterEnemy],
+        [20, 3000, 50, 3, spawnBasicEnemy, spawnShooterEnemy],
         [30, 3000, 30, 5, spawnBasicEnemy, spawnShooterEnemy, spawnShooterEnemy, spawnFatEnemy],
         [30, 2000, 100, 7, spawnBasicEnemy, spawnShooterEnemy, spawnShooterEnemy, spawnFatEnemy],
     ];
@@ -448,13 +449,11 @@ let timeSpentInSpectralWorld = 0;
         return entity;
     }
 
-    function spawnEffect(type, position, rotation, speed, image, ttl) {
+    function spawnSpriteEffect(type, position, direction, distance, image, ttl) {
         /**
          * types:
-         * 1 = enemy die effect: fly in direction + fade out
+         * 1 = after-images effect: fly in direction + fade out
          * 2 = enemy respawn effect: fly in direction + fade in
-         * 3 = box spawn effect: big circle close in
-         * 4 = spectral dash after-images: sprite fade out
          */
         /* #IfDev */
         // console.log('spawnEffect', type, position, rotation, speed, image, ttl);
@@ -463,10 +462,14 @@ let timeSpentInSpectralWorld = 0;
             /* #IfDev */
             name: 'Effect',
             /* #EndIfDev */
-            x: position.x,
-            y: position.y,
-            dx: Math.cos(rotation) * speed,
-            dy: Math.sin(rotation) * speed,
+            // x: position.x ,
+            // y: position.y ,
+            x: position.x + (type != 2 ? 0 : Math.cos(direction) * distance),
+            y: position.y + (type != 2 ? 0 : Math.sin(direction) * distance),
+            // dx: Math.cos(direction) * (distance / ttl),
+            // dy: Math.sin(direction) * (distance / ttl),
+            dx: Math.cos(direction) * (distance / ttl) * (type != 2 ? 1 : -1),
+            dy: Math.sin(direction) * (distance / ttl) * (type != 2 ? 1 : -1),
             image,
             anchor: { x: 0.5, y: 0.5 },
             ttl,
@@ -498,7 +501,59 @@ let timeSpentInSpectralWorld = 0;
         // return effect;
     }
 
+    function spawnGraphicsEffect(type, position, direction, distance, color, text, ttl) {
+        /**
+         * types:
+         * 1 = circle ripple effect: enlarge + fade out
+         * 2 = circle collect effect: shrink + no fade
+         * 3 = text effect: go up and fade out
+         */
+        /* #IfDev */
+        // console.log('spawnGraphicsEffect', type, position, direction, distance, color, text, ttl);
+        /* #EndIfDev */
+        const effect = effectsPool.get({
+            /* #IfDev */
+            name: 'Effect',
+            /* #EndIfDev */
+            x: position.x,
+            y: position.y,
+            dx: type < 3 ? 0 : (Math.cos(direction) * distance / ttl),
+            dy: type < 3 ? 0 : (Math.sin(direction) * distance / ttl),
+            anchor: { x: 0, y: 0 },
+            ttl,
+            ttl2: ttl,
+
+            render() {
+                if (type < 3) {
+                    context.strokeStyle = color;
+                    context.lineWidth = 1;
+
+                    context.globalAlpha = 1;
+                    if (type == 1) context.globalAlpha = this.ttl / this.ttl2;
+
+                    context.beginPath();
+                    if (type == 1) context.arc(0, 0, ((1 - this.ttl / this.ttl2) * distance), 0, 2 * Math.PI);
+                    if (type == 2) context.arc(0, 0, (this.ttl / this.ttl2 * distance), 0, 2 * Math.PI);
+                    context.stroke();
+                } else {
+                    context2.font = '16px sans-serif';
+                    context2.fillStyle = color;
+                    context2.textAlign = 'center';
+                    context2.fillText(text, this.x * 2, this.y * 2);
+                }
+                // if (this.color) {
+                //     context.fillStyle = this.color;
+                //     //@ts-ignore
+                //     context.fillRect(0, 0, this.width, this.height);
+                // }
+            },
+        });
+        // return effect;
+    }
+
     function spawnBox(x, y, _mainWeapon/*, _subWeapon*/) {
+
+        spawnGraphicsEffect(2, { x, y }, 0, 500, colors.orange, 0, 60);
         const entity = Sprite({
             x, y,
             box: 1,
@@ -530,6 +585,9 @@ let timeSpentInSpectralWorld = 0;
                     energy = 0;
                     levelUpEnergyGoal = 10 + Math.pow(mainWeapon, 1.7) * 5 | 0;
                     this.ttl = 0;
+
+                    spawnGraphicsEffect(3, this, -Math.PI / 2, 20, colors.white, 'Weapon', 60);
+                    spawnGraphicsEffect(1, this, 0, 500, colors.orange, 0, 60);
 
                     currentDimension = SPECTRAL_DIMENSION;
                     player.dimension = currentDimension;
@@ -669,7 +727,8 @@ let timeSpentInSpectralWorld = 0;
             entity.hp -= 1;
             entity.hitEffectUntil = Date.now() + 60;
             if (entity.hp <= 0) {
-                score += 10 * scoreMultiplier;
+                const addScore = 10 * scoreMultiplier;
+                score += addScore;
                 entity.ttl = 0;
                 energy++;
                 entity.onDeathSpawn?.();
@@ -677,13 +736,16 @@ let timeSpentInSpectralWorld = 0;
                 audio.play('explosion');
                 let rotation = Math.random() * Math.PI;
                 rotation += Math.PI / 2;
-                spawnEffect(1, entity.position, rotation, 6, entity.image, 10);
+                spawnSpriteEffect(1, entity.position, rotation, 60, entity.image, 10);
                 rotation += Math.PI / 2;
-                spawnEffect(1, entity.position, rotation, 6, entity.image, 10);
+                spawnSpriteEffect(1, entity.position, rotation, 60, entity.image, 10);
                 rotation += Math.PI / 2;
-                spawnEffect(1, entity.position, rotation, 6, entity.image, 10);
+                spawnSpriteEffect(1, entity.position, rotation, 60, entity.image, 10);
                 rotation += Math.PI / 2;
-                spawnEffect(1, entity.position, rotation, 6, entity.image, 10);
+                spawnSpriteEffect(1, entity.position, rotation, 60, entity.image, 10);
+
+
+                spawnGraphicsEffect(3, entity, -Math.PI / 2, 20, colors.white, '+' + addScore, 60);
             }
             // destroy bullet
             audio.play('hit');
@@ -879,6 +941,8 @@ let timeSpentInSpectralWorld = 0;
                     if (thisEntity.hp >= thisEntity.returnHp) {
                         thisEntity.spawnEntity();
                         thisEntity.ttl = 0;
+
+                        spawnGraphicsEffect(1, thisEntity, 0, 16, colors.lightGray, 0, 15);
                     }
                 }
                 thisEntity.update();
@@ -887,7 +951,7 @@ let timeSpentInSpectralWorld = 0;
                 // collision
                 const collisions = entities.filter(entity => (
                     entity != thisEntity &&
-                    entity.position.distance(thisEntity) < (entity.size ?? entity.width) / 2 + (thisEntity.size ?? thisEntity.width) / 2
+                    entity.position.distance(thisEntity) < (entity.size ?? entity.width) * 3 / 8 + (thisEntity.size ?? thisEntity.width) * 3 / 8
                 ));
 
                 const enemyCollideWithPlayer = collisions.some(entity => entity == player);
@@ -978,6 +1042,8 @@ let timeSpentInSpectralWorld = 0;
                         player.dx = 0;
                         player.dy = 0;
                     }
+
+                    spawnSpriteEffect(1, player, player.frontRotation + 2 * Math.PI, 4, images.playerSpectralDash, 16)
                 }
 
                 if (pointerPressed('left') && Date.now() >= player.nextCanShoot) {
@@ -1304,7 +1370,7 @@ let timeSpentInSpectralWorld = 0;
                 context2.fillText('Collect power-up to start game.', canvas2.width / 2, 540);
             }
             // if (tutProgress == 1) context2.fillText('Point mouse at ghost fire', canvas2.width / 2, 520);
-            else if (tutProgress == 2 && score < 100) {
+            else if (tutProgress == 2 && score < 100 && currentDimension == PHYSICAL_DIMENSION) {
                 context2.fillText('Use mouse to aim, left click to shoot,', canvas2.width / 2, 520);
                 context2.fillText('Avoid physical enemies.', canvas2.width / 2, 540);
             }

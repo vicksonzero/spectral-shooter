@@ -124,25 +124,28 @@ Language
 - [x] Wave 1
 - [x] GameOver, Basic Stats
 - [x] UI for spectral populations (needed vs available)
-- [ ] Tutorial (text and triggers)
-  - [ ] WASD (Until pick up DUAL_PISTOL)
-  - [ ] Spectral dash (Until back to physical)
-  - [ ] Click to shoot (Until 5 kills)
-  - [ ] Collect for better weapons (Until 2nd box spawns)
-  - [ ] Aim for high-score!
+- [x] Tutorial (text and triggers)
+  - [x] WASD (Until pick up DUAL_PISTOL)
+  - [x] Spectral dash (Until back to physical)
+  - [x] Click to shoot (Until 5 kills)
+  - [x] Collect for better weapons (Until 2nd box spawns)
+  - [x] Aim for high-score!
 - [ ] Score, multiplier, timer
-- [ ] Wave 5 with Shielded as boss
+- [x] Wave 5 with Shielded as boss
 
 ## Content 1
 - [x] dual pistol
 - [x] machine gun
 - [x] Weapon pickups linked to the scores
 - [ ] sfx and vfx for box spawning
-  - [ ] drop height for box
-- [ ] vfx for spectral dash
+  - [ ] sfx
+  - [x] vfx for spawn
+  - [x] vfx for eat
+  - [x] Upgrade box sprite
+- [x] vfx for spectral dash
 - [ ] vfx for blurring and glowing
   - [ ] glowing melee enemy
-  - [ ] 
+- [ ] vfx for enemy spawn
 
 
 ## Public testing
