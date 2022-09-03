@@ -1003,6 +1003,7 @@ window.onload = (async () => {
                 player.dx = input.l ? -player.speed : input.r ? +player.speed : 0;
 
                 if (currentDimension == SPECTRAL_DIMENSION) {
+
                     // dash towards mouse position
                     if (pointerPressed('left')) {
                         player.frontRotation = lerpRadians(player.frontRotation, pointerDirection, 1);
@@ -1019,12 +1020,34 @@ window.onload = (async () => {
 
                     player.dx = Math.cos(player.frontRotation) * Math.min(player.position.distance(pointer), player.speed * 2);
                     player.dy = Math.sin(player.frontRotation) * Math.min(player.position.distance(pointer), player.speed * 2);
+
+
+
                     // if (player.position.distance(pointer) < player.speed * 2) {
                     //     player.dx = 0;
                     //     player.dy = 0;
                     // }
 
-                    spawnSpriteEffect(1, player, player.frontRotation + 2 * Math.PI, 4, images.playerSpectralDash, 16)
+                    // if (pointerPressed('left') && player.knockDx < 0.1 && player.knockDy < 0.1) {
+                    //     player.knockDx = Math.cos(angleToPointer) * 10;
+                    //     player.knockDy = Math.sin(angleToPointer) * 10;
+                    //     // player.frontRotation = lerpRadians(player.frontRotation, pointerDirection, 1);
+                    // }
+
+                    // const keyboardRotation = Math.atan2(
+                    //     input.u ? -1 : input.d ? +1 : 0,
+                    //     input.l ? -1 : input.r ? +1 : 0
+                    // );
+                    // if (input.u || input.d || input.l || input.r) {
+                    //     player.frontRotation = lerpRadians(player.frontRotation, keyboardRotation, 1);
+                    // }
+
+
+                    // player.dx = Math.cos(player.frontRotation) * Math.min(player.position.distance(pointer), player.speed * 1.5);
+                    // player.dy = Math.sin(player.frontRotation) * Math.min(player.position.distance(pointer), player.speed * 1.5);
+
+                    // after-image
+                    spawnSpriteEffect(1, player, player.frontRotation + 2 * Math.PI, 4, images.playerSpectralDash, 16);
                 }
 
                 if (pointerPressed('left') && Date.now() >= player.nextCanShoot) {
@@ -1396,7 +1419,7 @@ window.onload = (async () => {
             if (currentDimension == SPECTRAL_DIMENSION && respawnEnergyGoal > energy) {
                 if (tutProgress == 1) {
                     // context2.fillText(`Point mouse at ghost fire,`, canvas2.width / 2, 520);
-                    context2.fillText(`Left click to dash at mouse,`, canvas2.width / 2, 520);
+                    context2.fillText(`Use keyboard or click to move in spectral form,`, canvas2.width / 2, 520);
                 }
                 context2.fillText(`Collect ${respawnEnergyGoal - energy} more ghost fire to respawn.`, canvas2.width / 2, 540);
 
