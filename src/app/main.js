@@ -734,7 +734,7 @@ window.onload = (async () => {
             audio.play('death');
         }
     }
-    
+
     // spawnBox(canvas.width / 2, canvas.height / 2, MAIN_SHOTGUN); // testing
     spawnBox(canvas.width / 2, canvas.height / 2, MAIN_DUAL_PISTOL);
 
@@ -962,8 +962,19 @@ window.onload = (async () => {
                     }
                     // knockback player
 
-                    player.knockDx = (player.x - thisEntity.x) / player.position.distance(thisEntity) * 12;
-                    player.knockDy = (player.y - thisEntity.y) / player.position.distance(thisEntity) * 12;
+                    player.knockDx = Math.cos(player.frontRotation + Math.PI) * 12;
+                    player.knockDy = Math.sin(player.frontRotation + Math.PI) * 12;
+
+
+                    // // snap knockback to 1 dimension
+                    // if (Math.abs(player.knockDx) > Math.abs(player.knockDy)) {
+                    //     player.knockDx = Math.sign(player.knockDx) * 12;
+                    //     player.knockDy = 0;
+                    // } else {
+                    //     player.knockDx = 0;
+                    //     player.knockDy = Math.sign(player.knockDy) * 12;
+                    // }
+
                     /* #IfDev */
                     // console.log('knock player', player.knockDx, player.knockDy);
                     /* #EndIfDev */
@@ -986,26 +997,32 @@ window.onload = (async () => {
 
             if (currentDimension == PHYSICAL_DIMENSION || currentDimension == SPECTRAL_DIMENSION) {
                 const pointer = getPointer();
-                const rotation = angleToTarget(player, pointer) - Math.PI / 2;
-                // const keyboardRotation = Math.atan2(
-                //     input.u ? -1 : input.d ? +1 : 0,
-                //     input.l ? -1 : input.r ? +1 : 0
-                // );
-                // if (input.u || input.d || input.l || input.r) {
-                //     player.frontRotation = lerpRadians(player.frontRotation, keyboardRotation, 0.1);
-                // }
-                player.frontRotation = lerpRadians(player.frontRotation, rotation, 0.2);
+                const pointerDirection = angleToTarget(player, pointer) - Math.PI / 2; // minus Math.PI / 2 to fix a bug of angleToTarget()
 
                 player.dy = input.u ? -player.speed : input.d ? +player.speed : 0;
                 player.dx = input.l ? -player.speed : input.r ? +player.speed : 0;
 
                 if (currentDimension == SPECTRAL_DIMENSION) {
+                    // dash towards mouse position
+                    if (pointerPressed('left')) {
+                        player.frontRotation = lerpRadians(player.frontRotation, pointerDirection, 1);
+                    } else {
+
+                        const keyboardRotation = Math.atan2(
+                            input.u ? -1 : input.d ? +1 : 0,
+                            input.l ? -1 : input.r ? +1 : 0
+                        );
+                        if (input.u || input.d || input.l || input.r) {
+                            player.frontRotation = lerpRadians(player.frontRotation, keyboardRotation, 1);
+                        }
+                    }
+
                     player.dx = Math.cos(player.frontRotation) * Math.min(player.position.distance(pointer), player.speed * 2);
                     player.dy = Math.sin(player.frontRotation) * Math.min(player.position.distance(pointer), player.speed * 2);
-                    if (player.position.distance(pointer) < player.speed * 2) {
-                        player.dx = 0;
-                        player.dy = 0;
-                    }
+                    // if (player.position.distance(pointer) < player.speed * 2) {
+                    //     player.dx = 0;
+                    //     player.dy = 0;
+                    // }
 
                     spawnSpriteEffect(1, player, player.frontRotation + 2 * Math.PI, 4, images.playerSpectralDash, 16)
                 }
@@ -1018,14 +1035,14 @@ window.onload = (async () => {
                             /* #IfDev */
                             name: 'bullet',
                             /* #EndIfDev */
-                            x: player.x + Math.cos(rotation + gunSide * 0.4) * 12,               // starting x,y position of the sprite
-                            y: player.y + Math.sin(rotation + gunSide * 0.4) * 12,
+                            x: player.x + Math.cos(pointerDirection + gunSide * 0.4) * 12,               // starting x,y position of the sprite
+                            y: player.y + Math.sin(pointerDirection + gunSide * 0.4) * 12,
                             color: colors.white,  // fill color of the sprite rectangle
                             width: 8,           // width and height of the sprite rectangle
                             height: 2,
-                            dx: Math.cos(rotation) * bulletSpeed,
-                            dy: Math.sin(rotation) * bulletSpeed,
-                            rotation,
+                            dx: Math.cos(pointerDirection) * bulletSpeed,
+                            dy: Math.sin(pointerDirection) * bulletSpeed,
+                            rotation: pointerDirection,
                             ttl: 3000,
                             anchor: { x: 0.5, y: 0.5 },
                             update: bulletUpdate,
@@ -1040,13 +1057,13 @@ window.onload = (async () => {
                     }
                     if (currentDimension == PHYSICAL_DIMENSION && mainWeapon == MAIN_MACHINE_GUN) {
                         const bulletSpeed = 20;
-                        const bulletRotation = rotation + Math.random() * 0.2 - 0.1;
+                        const bulletRotation = pointerDirection + Math.random() * 0.2 - 0.1;
                         const bullet = playerBulletPool.get({
                             /* #IfDev */
                             name: 'bullet',
                             /* #EndIfDev */
-                            x: player.x + Math.cos(rotation + 0.4) * 12,               // starting x,y position of the sprite
-                            y: player.y + Math.sin(rotation + 0.4) * 12,
+                            x: player.x + Math.cos(pointerDirection + 0.4) * 12,               // starting x,y position of the sprite
+                            y: player.y + Math.sin(pointerDirection + 0.4) * 12,
                             color: colors.white,  // fill color of the sprite rectangle
                             width: 8,           // width and height of the sprite rectangle
                             height: 2,
@@ -1067,13 +1084,13 @@ window.onload = (async () => {
                     if (currentDimension == PHYSICAL_DIMENSION && mainWeapon == MAIN_SHOTGUN) {
                         const bulletSpeed = 20;
                         for (let i = 0; i < 15; i++) {
-                            const bulletRotation = rotation + Math.random() * 0.8 - 0.4;
+                            const bulletRotation = pointerDirection + Math.random() * 0.8 - 0.4;
                             const bullet = playerBulletPool.get({
                                 /* #IfDev */
                                 name: 'bullet',
                                 /* #EndIfDev */
-                                x: player.x + Math.cos(rotation + 0.4) * 12,               // starting x,y position of the sprite
-                                y: player.y + Math.sin(rotation + 0.4) * 12,
+                                x: player.x + Math.cos(pointerDirection + 0.4) * 12,               // starting x,y position of the sprite
+                                y: player.y + Math.sin(pointerDirection + 0.4) * 12,
                                 color: colors.white,  // fill color of the sprite rectangle
                                 width: 8,           // width and height of the sprite rectangle
                                 height: 2,
@@ -1372,19 +1389,25 @@ window.onload = (async () => {
             }
             else if (tutProgress == 2 && score < 300 && currentDimension == PHYSICAL_DIMENSION) {
                 context2.fillText(`Monsters can respawn from the dead, but so can you.`, canvas2.width / 2, 520);
-                context2.fillText(`Jump to the Spectral world to clear them for good!.`, canvas2.width / 2, 540);
+                context2.fillText(`Go back to the Spectral world by leveling up!`, canvas2.width / 2, 540);
             }
 
 
             if (currentDimension == SPECTRAL_DIMENSION && respawnEnergyGoal > energy) {
                 if (tutProgress == 1) {
-                    context2.fillText(`Point mouse at ghost fire,`, canvas2.width / 2, 520);
+                    // context2.fillText(`Point mouse at ghost fire,`, canvas2.width / 2, 520);
+                    context2.fillText(`Left click to dash at mouse,`, canvas2.width / 2, 520);
                 }
                 context2.fillText(`Collect ${respawnEnergyGoal - energy} more ghost fire to respawn.`, canvas2.width / 2, 540);
 
             } else if (currentDimension == SPECTRAL_DIMENSION) {
                 context2.fillText(`Respawning shortly...`, canvas2.width / 2, 540);
             }
+
+            // border
+            context2.strokeStyle = colors.white;
+            context2.lineWidth = 1.5;
+            context2.strokeRect(10, 10, canvas2.width - 20, canvas2.height - 20);
 
 
 
