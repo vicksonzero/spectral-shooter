@@ -21,6 +21,7 @@ export async function loadImages() {
 
         dualPistolOrange: decompress(imageList.tile478_c, colors.orange),
         machineGunOrange: decompress(imageList.tile481, colors.orange),
+        shotgunOrange: decompress(imageList.tile480, colors.orange),
         // spiritRevolverBlue: decompress(imageList.tile479, colors.blue),
 
         floorTile1: decompress(imageList.tile002, colors.lightGray),

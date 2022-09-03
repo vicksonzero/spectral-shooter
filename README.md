@@ -156,6 +156,7 @@ Language
 - [ ] Fill the rest of the game with juice
 - [ ] Enemies
 - [ ] Guns
+- [ ] Add codenames like "Bringer of hell", "Deader get deader"
 
 ## Minimize
 

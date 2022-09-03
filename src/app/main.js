@@ -77,13 +77,11 @@ let levelUpEnergyGoal = 15;
 let nextSpawnTick = -1;
 let enemyCount = 0;
 
-let mainWeapon = MAIN_NONE// MAIN_NONE;
+let mainWeapon = MAIN_NONE; // MAIN_NONE;
+let mainWeaponLv = 1; // 1,2,3;
 let gunSide = 1; // 0, 1
 let tutProgress = 0;
 
-// // @ifdef SUBWEAPON
-// let subWeapon = 0;
-// // @endif
 
 
 // stats:
@@ -100,11 +98,17 @@ let timeSpentInSpectralWorld = 0;
 window.onload = (async () => {
     // loading
     const images = await loadImages();
+    const mainWeaponNames = [
+        '',
+        'Dual pistols',
+        'Submachine gun',
+        'Shotgun',
+    ]
     const mainWeaponImages = [
         '',
         images.dualPistolOrange,
         images.machineGunOrange,
-        images.dualPistolOrange,
+        images.shotgunOrange,
     ];
     // const subWeaponImages = [
     //     '',
@@ -131,7 +135,7 @@ window.onload = (async () => {
         [20, 3000, 40, 3, spawnBasicEnemy, spawnShooterEnemy],
         [20, 3000, 50, 3, spawnBasicEnemy, spawnShooterEnemy],
         [30, 3000, 30, 5, spawnBasicEnemy, spawnShooterEnemy, spawnShooterEnemy, spawnFatEnemy],
-        [30, 2000, 100, 7, spawnBasicEnemy, spawnShooterEnemy, spawnShooterEnemy, spawnFatEnemy],
+        [30, 2000, 100, 3, spawnBasicEnemy, spawnShooterEnemy, spawnShooterEnemy, spawnShooterEnemy, spawnFatEnemy, spawnFatEnemy],
     ];
 
     let waveID = 0;
@@ -559,9 +563,6 @@ window.onload = (async () => {
             box: 1,
             mainWeapon: _mainWeapon,
             image: images.dualPistolOrange,
-            // // @ifdef SUBWEAPON
-            // subWeapon: _subWeapon,
-            // // @endif
             update() {
                 if (player.position.distance(this) < this.width / 2 + player.width / 2) {
                     // console.log('player collect box');
@@ -575,18 +576,13 @@ window.onload = (async () => {
                         nextSpawnTick = Date.now() + 500;
                         // console.log(mainWeapon);
                     }
-                    // // @ifdef SUBWEAPON
-                    // if (this.subWeapon) { // not zero
-                    //     subWeapon = this.subWeapon;
-                    // }
-                    // // @endif
 
                     audio.play('pickup');
                     energy = 0;
                     levelUpEnergyGoal = 10 + Math.pow(mainWeapon, 1.7) * 5 | 0;
                     this.ttl = 0;
 
-                    spawnGraphicsEffect(3, this, -Math.PI / 2, 20, colors.white, 'Weapon', 60);
+                    spawnGraphicsEffect(3, this, -Math.PI / 2, 20, colors.white, mainWeaponNames[mainWeapon], 60);
                     spawnGraphicsEffect(1, this, 0, 500, colors.orange, 0, 60);
 
                     currentDimension = SPECTRAL_DIMENSION;
@@ -617,28 +613,6 @@ window.onload = (async () => {
                 context.ellipse(0, 0, 6, 10, -(Date.now() % 3000) / 3000 * 2 * Math.PI, 0, 2 * Math.PI);
                 context.stroke();
 
-                // // @ifdef SPRITE_IMAGE
-                // if (this.image) {
-                //     context.fillStyle = colors.darkGray;
-                //     context.globalAlpha = 0.7;
-                //     context.beginPath();
-                //     context.ellipse(0, 0 + this.height - 10, 6, 2, 0, 0, 2 * Math.PI);
-                //     context.fill();
-                //     context.globalAlpha = 1;
-                // }
-                // // @endif
-                // draw bounding weapon
-                // const amplitude = 1;
-                // const yy = Math.sin(Date.now() % 500 / 500 * 2 * Math.PI) * amplitude - 12;
-                // if (this.mainWeapon) { // not zero
-                //     context.drawImage(
-                //         mainWeaponImages[this.mainWeapon],
-                //         _x,
-                //         yy,
-                //         mainWeaponImages[this.mainWeapon].width,
-                //         mainWeaponImages[this.mainWeapon].height
-                //     );
-                // }
                 if (this.mainWeapon) { // not zero
                     context.drawImage(
                         mainWeaponImages[this.mainWeapon],
@@ -648,17 +622,6 @@ window.onload = (async () => {
                         mainWeaponImages[this.mainWeapon].height
                     );
                 }
-                // // @ifdef SUBWEAPON
-                // if (this.subWeapon) { // not zero
-                //     context.drawImage(
-                //         subWeaponImages[this.subWeapon],
-                //         0,
-                //         yy,
-                //         subWeaponImages[this.subWeapon].width,
-                //         subWeaponImages[this.subWeapon].height
-                //     );
-                // }
-                // // @endif
             },
         });
         entities.push(entity);
@@ -771,7 +734,8 @@ window.onload = (async () => {
             audio.play('death');
         }
     }
-
+    
+    // spawnBox(canvas.width / 2, canvas.height / 2, MAIN_SHOTGUN); // testing
     spawnBox(canvas.width / 2, canvas.height / 2, MAIN_DUAL_PISTOL);
 
     // Inputs (see https://xem.github.io/articles/jsgamesinputs.html)
@@ -1100,6 +1064,37 @@ window.onload = (async () => {
                         player.nextCanShoot = Date.now() + 100;
                         audio.play('shoot');
                     }
+                    if (currentDimension == PHYSICAL_DIMENSION && mainWeapon == MAIN_SHOTGUN) {
+                        const bulletSpeed = 20;
+                        for (let i = 0; i < 15; i++) {
+                            const bulletRotation = rotation + Math.random() * 0.8 - 0.4;
+                            const bullet = playerBulletPool.get({
+                                /* #IfDev */
+                                name: 'bullet',
+                                /* #EndIfDev */
+                                x: player.x + Math.cos(rotation + 0.4) * 12,               // starting x,y position of the sprite
+                                y: player.y + Math.sin(rotation + 0.4) * 12,
+                                color: colors.white,  // fill color of the sprite rectangle
+                                width: 8,           // width and height of the sprite rectangle
+                                height: 2,
+                                dx: Math.cos(bulletRotation) * bulletSpeed,
+                                dy: Math.sin(bulletRotation) * bulletSpeed,
+                                rotation: bulletRotation,
+                                ttl: 10,
+                                anchor: { x: 0.5, y: 0.5 },
+                                update: bulletUpdate,
+                                // custom properties
+                                dimension: player.dimension,
+                                bulletSpeed,
+                                team: TEAM_PLAYER,
+                            });
+                            setTimeout(() => {
+                                audio.play('shoot');
+                            }, i * 10);
+
+                        }
+                        player.nextCanShoot = Date.now() + 800;
+                    }
                 }
             }
             HandleSpawnTick();
@@ -1107,8 +1102,9 @@ window.onload = (async () => {
 
             // energy
             if (currentDimension == PHYSICAL_DIMENSION && energy >= levelUpEnergyGoal && !entities.some(e => e.box == 1)) {
+                const nextWeapon = Math.min(mainWeaponImages.length - 1, mainWeapon + 1);
                 const pos = getFreeSpace();
-                if (pos) spawnBox(pos.x, pos.y, MAIN_MACHINE_GUN);
+                if (pos) spawnBox(pos.x, pos.y, nextWeapon);
             }
             // if (currentDimension == PHYSICAL_DIMENSION && energy >= respawnEnergyGoal) {
             //     audio.play('respawn');
