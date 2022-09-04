@@ -146,7 +146,7 @@ Language
 - [x] vfx for spectral dash
 - [ ] vfx for blurring and glowing
   - [ ] glowing melee enemy
-- [ ] vfx for enemy spawn
+- [x] vfx for enemy spawn
 
 
 ## Public testing
@@ -154,7 +154,7 @@ Language
 
 ## Content 2
 - [ ] Arena transition
-- [ ] Fill the rest of the game with juice
+- [x] Fill the rest of the game with juice
 - [ ] Enemies
 - [ ] Guns
 - [ ] Add codenames like "Bringer of hell", "Deader get deader"

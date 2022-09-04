@@ -1440,16 +1440,16 @@ async function start() {
                 if (tutProgress == 0) {
                     context2.fillText('A js13k game By Dickson', canvas2.width / 2, canvas2.height / 2 - 80);
                     context2.fillText('Use WASD, ZQSD, or ← ↓ ↑ → to move.', canvas2.width / 2, 520);
-                    context2.fillText('Collect power-up to start game.', canvas2.width / 2, 540);
+                    context2.fillText('Collect power-up to start game.', canvas2.width / 2, 560);
                 }
                 // if (tutProgress == 1) context2.fillText('Point mouse at ghost fire', canvas2.width / 2, 520);
                 else if (tutProgress == 2 && score < 100 && currentDimension == PHYSICAL_DIMENSION) {
                     context2.fillText('Use mouse to aim, left click to shoot,', canvas2.width / 2, 520);
-                    context2.fillText('Avoid physical enemies.', canvas2.width / 2, 540);
+                    context2.fillText('Avoid physical enemies.', canvas2.width / 2, 560);
                 }
                 else if (tutProgress == 2 && score < 300 && currentDimension == PHYSICAL_DIMENSION) {
                     context2.fillText(`Monsters can respawn from the dead, but so can you.`, canvas2.width / 2, 520);
-                    context2.fillText(`Go back to the Spectral world by leveling up!`, canvas2.width / 2, 540);
+                    context2.fillText(`Go back to the Spectral world by leveling up!`, canvas2.width / 2, 560);
                 }
 
 
@@ -1458,10 +1458,10 @@ async function start() {
                         // context2.fillText(`Point mouse at ghost fire,`, canvas2.width / 2, 520);
                         context2.fillText(`Use keyboard or click to move in spectral form,`, canvas2.width / 2, 520);
                     }
-                    context2.fillText(`Collect ${energy}/${respawnEnergyGoal} ghost fire to respawn.`, canvas2.width / 2, 540);
+                    context2.fillText(`Collect ${energy}/${respawnEnergyGoal} ghost fire to respawn.`, canvas2.width / 2, 560);
 
                 } else if (currentDimension == SPECTRAL_DIMENSION) {
-                    context2.fillText(`Respawning shortly...`, canvas2.width / 2, 540);
+                    context2.fillText(`Respawning shortly...`, canvas2.width / 2, 560);
                 }
 
             }
@@ -1508,7 +1508,7 @@ async function start() {
 
                 context2.textAlign = 'center';
                 context2.fillText('Press <Enter> to restart', canvas2.width / 2, 500);
-                context2.fillText(`Collect ${energy}/${respawnEnergyGoal} ghost fire to respawn.`, canvas2.width / 2, 540);
+                context2.fillText(`Collect ${energy}/${respawnEnergyGoal} ghost fire to respawn.`, canvas2.width / 2, 560);
             }
 
 
