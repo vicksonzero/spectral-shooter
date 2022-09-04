@@ -16,6 +16,7 @@ Made for the js13k game jam 2022
 in the project directory, run:
 
 ```bash
+npm install
 node ./scripts/compress1BitImages.js
 ```
 

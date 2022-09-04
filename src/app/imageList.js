@@ -33,7 +33,7 @@
 /* items\tile133.png      */ export const tile133 = [16,,,8192,12288,30720,25600,25088,24832,24704,8256,4128,16,8,6,6,];
 /* items\tile134.png      */ export const tile134 = [16,,2048,12288,12288,30720,25600,25088,24832,24704,8288,4160,24,16,6,6,];
 /* items\tile478_b.png    */ export const tile478_b = [16, 1028, 4095, 4095, 4095, , 62, 15, 15, 16448, 65520, 65520, 65520, , 992, 240, 240]; // dual pistol
-/* items\tile478_c.png    */ export const tile478_c = [16, , , , 2052, 8190, 8190, , 8238, 32756, 32758, , 496, 96, 112, ,]; // dual small pistol
+/* items\tile478_c.png    */ export const tile478_c = [16,,,2052,8190,8190,,8238,32756,32758,,496,96,112,,,]; // dual small pistol
 /* items\tile478.png      */ export const tile478 = [16, , , , , 4112, 16380, 16380, 16380, , 248, 60, 60, , , ,]; // single pistol
 /* items\tile479.png      */ export const tile479 = [16,,,,,132,29182,32726,29162,188,124,30,30,,,,];
 /* items\tile480.png      */ export const tile480 = [16,,,,,,32752,32760,8444,3758,30,6,,,,,];

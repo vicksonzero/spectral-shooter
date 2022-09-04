@@ -10,96 +10,97 @@ import { colors } from './colors';
 import { loadImages } from './images';
 import { ArcadeAudio } from './audio';
 
-/**
- * behaviours:
- * w=walk(strafe, speed, targetX, targetY), // infinite aggro range
- * <=chase,  // chase at speed of 1
- * >=avoid,  // avoid at speed of 1
- * .=wander, // wander at speed of 0.2
- * d=solid,  // try not to collide with others
- * D=static, // stops others from hitting
- * W=wall,   // static, plus absorbs bullets
- * m=melee,  // does knockback on both sides
- * s=shooty(spellCard),
- * // b=box()     // gives item
- */
 
-const DIFFICULTY_RATIO = 1.3; // GoldenRatio=1.618
+async function start() {
+    /**
+     * behaviours:
+     * w=walk(strafe, speed, targetX, targetY), // infinite aggro range
+     * <=chase,  // chase at speed of 1
+     * >=avoid,  // avoid at speed of 1
+     * .=wander, // wander at speed of 0.2
+     * d=solid,  // try not to collide with others
+     * D=static, // stops others from hitting
+     * W=wall,   // static, plus absorbs bullets
+     * m=melee,  // does knockback on both sides
+     * s=shooty(spellCard),
+     * // b=box()     // gives item
+     */
 
-const BACKGROUND_COLOR = colors.bgGray;// colors.bgBrown;
-const PHYSICAL_DIMENSION = 0;
-const SPECTRAL_DIMENSION = 1;
-const BETWEEN_DIMENSION1 = 2;
-const BETWEEN_DIMENSION2 = 3;
-const BETWEEN_DIMENSION3 = 4;
+    const DIFFICULTY_RATIO = 1.3; // GoldenRatio=1.618
 
-
-const MAIN_NONE = 0 // none
-const MAIN_DUAL_PISTOL = 1 // dual pistol (low spray)
-const MAIN_MACHINE_GUN = 2 // machine gun (mid spray)
-const MAIN_SHOTGUN = 3 // shotgun (no spray)
-const MAIN_DUAL_UZI = 4 // dual uzi (no spray)
-const MAIN_MINI_GUN = 5 // mini gun (mid spray)
-const MAIN_SPREAD_GUN = 6 // spread gun (no spray)
-const MAIN_ROCKET = 7 // rocket (no spray)
-const MAIN_NUKE = 8 // nuke (no spray)
+    const BACKGROUND_COLOR = colors.bgGray;// colors.bgBrown;
+    const PHYSICAL_DIMENSION = 0;
+    const SPECTRAL_DIMENSION = 1;
+    const BETWEEN_DIMENSION1 = 2;
+    const BETWEEN_DIMENSION2 = 3;
+    const BETWEEN_DIMENSION3 = 4;
 
 
-const SUB_SPIRIT_DASH = 0 // Spirit Dash
-const SUB_SPIRIT_REVOLVER = 1 // Spectral Revolver
+    const MAIN_NONE = 0 // none
+    const MAIN_DUAL_PISTOL = 1 // dual pistol (low spray)
+    const MAIN_MACHINE_GUN = 2 // machine gun (mid spray)
+    const MAIN_SHOTGUN = 3 // shotgun (no spray)
+    const MAIN_DUAL_UZI = 4 // dual uzi (no spray)
+    const MAIN_MINI_GUN = 5 // mini gun (mid spray)
+    const MAIN_SPREAD_GUN = 6 // spread gun (no spray)
+    const MAIN_ROCKET = 7 // rocket (no spray)
+    const MAIN_NUKE = 8 // nuke (no spray)
 
 
-const TEAM_PLAYER = 0;
-const TEAM_ENEMY = 1; // or undefined
+    const SUB_SPIRIT_DASH = 0 // Spirit Dash
+    const SUB_SPIRIT_REVOLVER = 1 // Spectral Revolver
 
 
-const ENEMY_RESPAWN_TIME = 25;
-
-const DIMENSION_TRANSITION_LENGTH1 = 500;
-const DIMENSION_TRANSITION_LENGTH2 = 1000;
-const DIMENSION_TRANSITION_LENGTH3 = 1000;
-
-let gameIsOver = 0;
-
-let currentDimension = 0; // 0=physical, 1=spectral
-let dimensionTransitionUntil = 0;
-let dimensionAlpha = 0; // 0=physical, 1=spectral
-
-let score = 0;
-let scoreMultiplier = 1;
-let scoreMultiplierNextTick = 0;
-
-let energy = 0;
-let respawnEnergyGoal = 5;
-let respawnEnergyTimeLimit = 0;
-let levelUpEnergyGoal = 15;
-
-let nextSpawnTick = -1;
-let enemyCount = 0;
-
-let mainWeapon = MAIN_NONE; // MAIN_NONE;
-let mainWeaponLv = 1; // 1,2,3;
-let gunSide = 1; // 0, 1
-let tutProgress = 0;
+    const TEAM_PLAYER = 0;
+    const TEAM_ENEMY = 1; // or undefined
 
 
+    const ENEMY_RESPAWN_TIME = 25;
 
-// stats:
-let time = 0;
-// let score = score;
-// let wave index = waveId;
-let killsA = 0;
-let killsB = 0;
-let countCompleteKills = 0;
-let timeSpentInSpectralWorld = 0;
+    const DIMENSION_TRANSITION_LENGTH1 = 500;
+    const DIMENSION_TRANSITION_LENGTH2 = 1000;
+    const DIMENSION_TRANSITION_LENGTH3 = 1000;
+
+    let gameIsOver = 0;
+
+    let currentDimension = 0; // 0=physical, 1=spectral
+    let dimensionTransitionUntil = 0;
+    let dimensionAlpha = 0; // 0=physical, 1=spectral
+
+    let score = 0;
+    let scoreMultiplier = 10;
+    let scoreMultiplierAck = 1;
+
+    let energy = 0;
+    let respawnEnergyGoal = 5;
+    let respawnEnergyTimeLimit = 0;
+    let levelUpEnergyGoal = 10;
+
+    let nextSpawnTick = -1;
+    let enemyCount = 0;
+
+    let mainWeapon = MAIN_NONE; // MAIN_NONE;
+    let mainWeaponLv = 1; // 1,2,3;
+    let gunSide = 1; // 0, 1
+    let tutProgress = 0;
 
 
 
-window.onload = (async () => {
+    // stats:
+    let time = 0;
+    // let score = score;
+    // let wave index = waveId;
+    let killsA = 0;
+    let killsB = 0;
+    let countCompleteKills = 0;
+    let timeSpentInSpectralWorld = 0;
+
+
+
     // loading
     const images = await loadImages();
     const mainWeaponNames = [
-        '',
+        '', // 'None',
         'Dual pistols',
         'Submachine gun',
         'Shotgun',
@@ -125,6 +126,7 @@ window.onload = (async () => {
     let { canvas, context } = init('a');
 
     context.imageSmoothingEnabled = false;
+    context2.imageSmoothingEnabled = false;
     initPointer();
 
 
@@ -183,26 +185,6 @@ window.onload = (async () => {
         frontRotation: 0,
     });
     entities.push(player);
-
-    const portalPrototype = {
-        r: 16,
-        length: 2000,
-        update() {
-            if (Date.now() >= this.untilTime) {
-                this.spawnEntity();
-            }
-        },
-        render() {
-            const progress = this.untilTime - Date.now();
-            if (progress < 0) return;
-            context.strokeStyle = 'purple';
-            context.lineWidth = 1;
-            context.beginPath();
-            context.arc(this.x, this.y, this.r * progress / this.length, 0, 2 * Math.PI);
-            context.stroke();
-        },
-
-    };
 
     function lerpRadians(a, b, lerpFactor)// Lerps from angle a to b (both between 0.f and 2*Math.PI), taking the shortest path
     {
@@ -322,8 +304,8 @@ window.onload = (async () => {
                 if (this.image) {
                     context.drawImage(
                         this.image,
-                        0,
-                        0,
+                        (this.image.width - this.size) / 2,
+                        (this.image.width - this.size) / 2,
                         this.size,
                         this.size
                     );
@@ -579,9 +561,12 @@ window.onload = (async () => {
 
                     audio.play('pickup');
                     energy = 0;
-                    levelUpEnergyGoal = 10 + Math.pow(mainWeapon, 1.7) * 5 | 0;
+                    scoreMultiplierAck = scoreMultiplier / levelUpEnergyGoal | 0;
+                    levelUpEnergyGoal = 5 + Math.pow(mainWeapon, 1.3) * 5 | 0;
+                    console.log('levelUpEnergyGoal', levelUpEnergyGoal);
                     this.ttl = 0;
 
+                    entities.filter(e => e.box == 1).forEach(e => e.ttl = 0);
                     spawnGraphicsEffect(3, this, -Math.PI / 2, 20, colors.white, mainWeaponNames[mainWeapon], 60);
                     spawnGraphicsEffect(1, this, 0, 500, colors.orange, 0, 60);
 
@@ -690,10 +675,11 @@ window.onload = (async () => {
             entity.hp -= 1;
             entity.hitEffectUntil = Date.now() + 60;
             if (entity.hp <= 0) {
-                const addScore = 10 * scoreMultiplier;
+                const addScore = 10 * (scoreMultiplier / levelUpEnergyGoal | 0);
                 score += addScore;
                 entity.ttl = 0;
                 energy++;
+                scoreMultiplier++;
                 entity.onDeathSpawn?.();
 
                 audio.play('explosion');
@@ -729,7 +715,10 @@ window.onload = (async () => {
             player.dx = 0;
             player.dy = 0;
             energy = 0;
+            scoreMultiplier = levelUpEnergyGoal;
+            scoreMultiplierAck = 1;
             respawnEnergyTimeLimit = Date.now() + 13 * 1000;
+            entities.filter(e => e.box == 1).forEach(e => e.ttl = 0);
 
             audio.play('death');
         }
@@ -772,6 +761,7 @@ window.onload = (async () => {
             48: 'c1', /* 0 */ // cheat 1
             32: 's', /* space */
             8: 'b', /* backspace */
+            13: 'en', /* enter */
         };
 
         if (!keyMap[w]) return;
@@ -785,6 +775,10 @@ window.onload = (async () => {
         if (input.s && 's' == keyMap[w]) {
             audio.play('test');
             input.s = 0;
+        }
+        if (input.en && 'en' == keyMap[w] && gameIsOver) {
+            restart();
+            input.en = 0;
         }
         // END toggles quick hack
 
@@ -927,6 +921,8 @@ window.onload = (async () => {
                     enemyCount--;
                     thisEntity.ttl = 0;
 
+
+                    spawnGraphicsEffect(3, thisEntity, -Math.PI / 2, 20, colors.white, energy + '/' + respawnEnergyGoal, 60);
                     // add to resurrection energy
                 }
 
@@ -944,7 +940,10 @@ window.onload = (async () => {
                     player.dx = 0;
                     player.dy = 0;
                     energy = 0;
+                    scoreMultiplier = levelUpEnergyGoal;
+                    scoreMultiplierAck = 1;
                     respawnEnergyTimeLimit = Date.now() + 13 * 1000;
+                    entities.filter(e => e.box == 1).forEach(e => e.ttl = 0);
 
                     audio.play('death');
                 }
@@ -955,7 +954,8 @@ window.onload = (async () => {
                     audio.play('hit');
                     thisEntity.hp -= 3;
                     if (thisEntity.hp <= 0) {
-                        score += 10 * scoreMultiplier;
+                        score += 10 * (scoreMultiplier / levelUpEnergyGoal | 0);
+                        scoreMultiplier++;
                         audio.play('explosion');
                         thisEntity.ttl = 0;
                         thisEntity.onDeathSpawn?.();
@@ -1139,9 +1139,11 @@ window.onload = (async () => {
             }
             HandleSpawnTick();
 
-
+            // multiplier limit, multiplier cap
+            scoreMultiplier = Math.min(10 * levelUpEnergyGoal, scoreMultiplier);
             // energy
-            if (currentDimension == PHYSICAL_DIMENSION && energy >= levelUpEnergyGoal && !entities.some(e => e.box == 1)) {
+            console.log('scoreMultiplier', (scoreMultiplier / levelUpEnergyGoal | 0), scoreMultiplierAck);
+            if (currentDimension == PHYSICAL_DIMENSION && entities.filter(e => e.box == 1).length < (scoreMultiplier / levelUpEnergyGoal | 0) - scoreMultiplierAck) {
                 const nextWeapon = Math.min(mainWeaponImages.length - 1, mainWeapon + 1);
                 const pos = getFreeSpace();
                 if (pos) spawnBox(pos.x, pos.y, nextWeapon);
@@ -1154,7 +1156,7 @@ window.onload = (async () => {
             if (currentDimension == SPECTRAL_DIMENSION && Date.now() >= respawnEnergyTimeLimit) {
                 if (energy < respawnEnergyGoal) {
                     // game over
-                    gameIsOver = true;
+                    gameIsOver++;
 
                     audio.play('game_over');
                 } else {
@@ -1332,100 +1334,182 @@ window.onload = (async () => {
 
             // energy bar
 
-            const padding = 40;
-            const _y = 290 * 2;
-            const barWidth = (canvas2.width - padding - padding) * Math.min(1, energy / levelUpEnergyGoal);
-            const respawnEnergyGoalX = (padding + (canvas2.width - padding - padding) * respawnEnergyGoal / levelUpEnergyGoal) | 0;
-            const levelUpEnergyGoalX = (padding + (canvas2.width - padding - padding)) | 0;
+            // const padding = 40;
+            // const _y = 280 * 2;
+            // const barWidth = (canvas2.width - padding - padding) * Math.min(1, energy / levelUpEnergyGoal);
+            // const respawnEnergyGoalX = (padding + (canvas2.width - padding - padding) * respawnEnergyGoal / levelUpEnergyGoal) | 0;
+            // const levelUpEnergyGoalX = (padding + (canvas2.width - padding - padding)) | 0;
 
-            context2.globalAlpha = 0.7;
-            context2.fillStyle = colors.darkGray;
-            context2.fillRect(padding + barWidth, _y + 4, canvas2.width - padding - padding - barWidth, 8);
+            // context2.globalAlpha = 0.7;
+            // context2.fillStyle = colors.darkGray;
+            // context2.fillRect(padding + barWidth, _y + 4, canvas2.width - padding - padding - barWidth, 8);
 
-            context2.fillStyle = (currentDimension == SPECTRAL_DIMENSION ? colors.blue : colors.orange);
+            // context2.fillStyle = (currentDimension == SPECTRAL_DIMENSION ? colors.blue : colors.orange);
 
-            if (energy < levelUpEnergyGoal || (Date.now() % 1000) > 500) context.globalAlpha = 0.5;
+            // if (energy < levelUpEnergyGoal || (Date.now() % 1000) > 500) context.globalAlpha = 0.5;
 
-            context2.fillRect(padding, _y, barWidth, 16);
+            // context2.fillRect(padding, _y, barWidth, 16);
 
 
-            context2.strokeStyle = currentDimension ? colors.blue : colors.orange;
-            context2.lineWidth = 1;
+            // context2.strokeStyle = currentDimension ? colors.blue : colors.orange;
+            // context2.lineWidth = 1;
 
-            context2.beginPath();
-            context2.moveTo(respawnEnergyGoalX, _y - 8);
-            context2.lineTo(respawnEnergyGoalX, _y + 16 + 8);
-            context2.stroke();
+            // context2.beginPath();
+            // context2.moveTo(respawnEnergyGoalX, _y - 8);
+            // context2.lineTo(respawnEnergyGoalX, _y + 16 + 8);
+            // context2.stroke();
 
-            context2.beginPath();
-            context2.moveTo(levelUpEnergyGoalX, _y - 8);
-            context2.lineTo(levelUpEnergyGoalX, _y + 16 + 8);
-            context2.stroke();
+            // context2.beginPath();
+            // context2.moveTo(levelUpEnergyGoalX, _y - 8);
+            // context2.lineTo(levelUpEnergyGoalX, _y + 16 + 8);
+            // context2.stroke();
 
-            context2.globalAlpha = 1;
+            // context2.globalAlpha = 1;
 
-            context2.font = '16px sans-serif';
-            context2.fillStyle = colors.white;
-            context2.textAlign = 'right';
-            context2.fillText(currentDimension == SPECTRAL_DIMENSION ? 'Respawn' : '1-up', respawnEnergyGoalX - 4, _y + 40);
-            context2.fillText(currentDimension == SPECTRAL_DIMENSION ? 'Bonus' : 'Level up', levelUpEnergyGoalX - 4, _y + 40);
+            // context2.font = '16px sans-serif';
+            // context2.fillStyle = colors.white;
+            // context2.textAlign = 'right';
+            // context2.fillText(currentDimension == SPECTRAL_DIMENSION ? 'Respawn' : '1-up', respawnEnergyGoalX - 4, _y + 40);
+            // context2.fillText(currentDimension == SPECTRAL_DIMENSION ? 'Bonus' : 'Level up', levelUpEnergyGoalX - 4, _y + 40);
 
 
             // score
             context2.textAlign = 'left';
             context2.fillStyle = colors.white;
             context2.font = '16px sans-serif';
-            context2.fillText('Score', 40, 28);
-            context2.font = '40px sans-serif';
-            context2.fillText(score, 40, 72);
+            context2.fillText('Score:', 64 - 40, 64 + 72 - 20);
+            context2.font = '28px sans-serif';
+            context2.fillText(score, 64 - 40 + 48, 64 + 72 - 20);
 
+            // combo
+            if (scoreMultiplier > 10) {
+                context2.font = '16px sans-serif';
+                context2.fillText('Combo:', 64 - 40, 64 + 72 + 20 + 10);
+                context2.textAlign = 'center';
+                // context2.font = '28px sans-serif';
+                context2.fillText((scoreMultiplier / levelUpEnergyGoal | 0) + 'x', 64 + 52, 64 + 72 + 20 + 10);
 
-            // titles
-            context2.font = '72px sans-serif';
-            context2.textAlign = 'center';
-            context2.fillStyle = colors.white;
-
-            if (currentDimension == SPECTRAL_DIMENSION && Date.now() < respawnEnergyTimeLimit) {
-                context2.globalAlpha = 0.5;
-                context2.fillText(((respawnEnergyTimeLimit - Date.now()) / 1000) | 0, canvas2.width / 2, canvas2.height / 2);
+                context2.strokeStyle = colors.white;
+                context2.lineWidth = 4;
+                context2.beginPath();
+                context2.arc(64 + 52, 64 + 72 + 24, 24, Math.PI, Math.PI + (scoreMultiplier % levelUpEnergyGoal) / levelUpEnergyGoal * 2 * Math.PI);
+                context2.stroke();
             }
-            if (tutProgress == 0) {
-                context2.fillText('Spectral-Shooter', canvas2.width / 2, canvas2.height / 2 - 120);
-            }
 
-            // style for tutorial text
+            // main weapon
+            context2.beginPath();
+            context2.arc(64 - 40 + 20, 64 - 36 + 20, 20, 0, 2 * Math.PI);
+            context2.fill();
+            if (mainWeaponImages[mainWeapon]) {
+                context2.drawImage(
+                    mainWeaponImages[mainWeapon],
+                    64 - 40 + 4,
+                    64 - 36 + 4,
+                    32,
+                    32
+                );
+            }
             context2.font = '16px sans-serif';
-            context2.textAlign = 'center';
-            context2.fillStyle = colors.white;
-            context2.globalAlpha = 1;
-
-            // tutorial
-            if (tutProgress == 0) {
-                context2.fillText('A js13k game By Dickson', canvas2.width / 2, canvas2.height / 2 - 80);
-                context2.fillText('Use WASD, ZQSD, or ← ↓ ↑ → to move.', canvas2.width / 2, 520);
-                context2.fillText('Collect power-up to start game.', canvas2.width / 2, 540);
-            }
-            // if (tutProgress == 1) context2.fillText('Point mouse at ghost fire', canvas2.width / 2, 520);
-            else if (tutProgress == 2 && score < 100 && currentDimension == PHYSICAL_DIMENSION) {
-                context2.fillText('Use mouse to aim, left click to shoot,', canvas2.width / 2, 520);
-                context2.fillText('Avoid physical enemies.', canvas2.width / 2, 540);
-            }
-            else if (tutProgress == 2 && score < 300 && currentDimension == PHYSICAL_DIMENSION) {
-                context2.fillText(`Monsters can respawn from the dead, but so can you.`, canvas2.width / 2, 520);
-                context2.fillText(`Go back to the Spectral world by leveling up!`, canvas2.width / 2, 540);
-            }
+            context2.textAlign = 'left';
+            context2.fillText(mainWeaponNames[mainWeapon], 64 - 40 + 48, 64 - 36 + 20 + 8);
 
 
-            if (currentDimension == SPECTRAL_DIMENSION && respawnEnergyGoal > energy) {
-                if (tutProgress == 1) {
-                    // context2.fillText(`Point mouse at ghost fire,`, canvas2.width / 2, 520);
-                    context2.fillText(`Use keyboard or click to move in spectral form,`, canvas2.width / 2, 520);
+            if (!gameIsOver) {
+                // titles
+                context2.font = '96px sans-serif';
+                context2.textAlign = 'center';
+                context2.fillStyle = colors.white;
+
+                if (currentDimension == SPECTRAL_DIMENSION && Date.now() < respawnEnergyTimeLimit) {
+                    context2.globalAlpha = 0.5;
+                    context2.fillText(((respawnEnergyTimeLimit - Date.now()) / 1000) | 0, canvas2.width / 2, canvas2.height / 2);
                 }
-                context2.fillText(`Collect ${respawnEnergyGoal - energy} more ghost fire to respawn.`, canvas2.width / 2, 540);
+                if (tutProgress == 0) {
+                    context2.font = '72px sans-serif';
+                    context2.fillText('Spectral-Shooter', canvas2.width / 2, canvas2.height / 2 - 120);
+                }
 
-            } else if (currentDimension == SPECTRAL_DIMENSION) {
-                context2.fillText(`Respawning shortly...`, canvas2.width / 2, 540);
+                // style for tutorial text
+                context2.font = '16px sans-serif';
+                context2.textAlign = 'center';
+                context2.fillStyle = colors.white;
+                context2.globalAlpha = 1;
+
+                // tutorial
+                if (tutProgress == 0) {
+                    context2.fillText('A js13k game By Dickson', canvas2.width / 2, canvas2.height / 2 - 80);
+                    context2.fillText('Use WASD, ZQSD, or ← ↓ ↑ → to move.', canvas2.width / 2, 520);
+                    context2.fillText('Collect power-up to start game.', canvas2.width / 2, 540);
+                }
+                // if (tutProgress == 1) context2.fillText('Point mouse at ghost fire', canvas2.width / 2, 520);
+                else if (tutProgress == 2 && score < 100 && currentDimension == PHYSICAL_DIMENSION) {
+                    context2.fillText('Use mouse to aim, left click to shoot,', canvas2.width / 2, 520);
+                    context2.fillText('Avoid physical enemies.', canvas2.width / 2, 540);
+                }
+                else if (tutProgress == 2 && score < 300 && currentDimension == PHYSICAL_DIMENSION) {
+                    context2.fillText(`Monsters can respawn from the dead, but so can you.`, canvas2.width / 2, 520);
+                    context2.fillText(`Go back to the Spectral world by leveling up!`, canvas2.width / 2, 540);
+                }
+
+
+                if (currentDimension == SPECTRAL_DIMENSION && respawnEnergyGoal > energy) {
+                    if (tutProgress == 1) {
+                        // context2.fillText(`Point mouse at ghost fire,`, canvas2.width / 2, 520);
+                        context2.fillText(`Use keyboard or click to move in spectral form,`, canvas2.width / 2, 520);
+                    }
+                    context2.fillText(`Collect ${energy}/${respawnEnergyGoal} ghost fire to respawn.`, canvas2.width / 2, 540);
+
+                } else if (currentDimension == SPECTRAL_DIMENSION) {
+                    context2.fillText(`Respawning shortly...`, canvas2.width / 2, 540);
+                }
+
             }
+
+            if (gameIsOver) {
+            // if (true) {
+                gameIsOver++;
+
+                context2.fillStyle = colors.black;
+                context2.globalAlpha = Math.min(1, gameIsOver / 5 / 60) * 0.7;
+                context2.fillRect(0, 0, canvas2.width, canvas2.height);
+                context2.globalAlpha = 1;
+
+                let _y = 180;
+                context2.fillStyle = colors.white;
+                context2.textAlign = 'center';
+                context2.font = '72px sans-serif';
+                context2.fillText('Game Over', canvas2.width / 2, _y += 20);
+
+                _y += 20
+                _y += 20
+                let __y = _y;
+
+                context2.font = '16px sans-serif';
+                context2.textAlign = 'right';
+                context2.fillText('Score: ', canvas2.width / 2, _y += 20);
+                _y += 20
+                context2.fillText('Time: ', canvas2.width / 2, _y += 20);
+                context2.fillText('Highest combo: ', canvas2.width / 2, _y += 20);
+                context2.fillText('Kills: ', canvas2.width / 2, _y += 20);
+                context2.fillText('Souls collected: ', canvas2.width / 2, _y += 20);
+
+
+                context2.textAlign = 'left';
+                context2.font = '28px sans-serif';
+                context2.fillText(score, canvas2.width / 2, __y += 20); // Score
+                context2.font = '16px sans-serif';
+                __y += 20
+                context2.fillText(`${time}s (${0}s in spectral world)`, canvas2.width / 2, __y += 20); // Time
+                context2.fillText(`0x (10s)`, canvas2.width / 2, __y += 20); // Highest combo
+                context2.fillText(`${0} (${0}, 0, 0)`, canvas2.width / 2, __y += 20); // Kills
+                context2.fillText(`${0} (${0}, 0, 0)`, canvas2.width / 2, __y += 20); // Complete kills
+
+
+                context2.textAlign = 'center';
+                context2.fillText('Press <Enter> to restart', canvas2.width / 2, 500);
+                context2.fillText(`Collect ${energy}/${respawnEnergyGoal} ghost fire to respawn.`, canvas2.width / 2, 540);
+            }
+
 
             // border
             context2.strokeStyle = colors.white;
@@ -1433,20 +1517,22 @@ window.onload = (async () => {
             context2.strokeRect(10, 10, canvas2.width - 20, canvas2.height - 20);
 
 
-
-            if (gameIsOver) {
-                context2.font = '48px sans-serif';
-                context2.textAlign = 'center';
-                context2.fillText(
-                    'Game Over',
-                    canvas2.width / 2,
-                    canvas2.height / 2
-                );
-            }
             context.restore();
         }
 
     });
 
     loop.start();    // start the game
-});
+    function restart() {
+        // cleanup
+        loop.stop();
+
+        window.removeEventListener('keydown', keyHandler);
+        window.removeEventListener('keyup', keyHandler);
+
+        // restart
+        start();
+    }
+}
+
+window.onload = start;
