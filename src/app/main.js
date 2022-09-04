@@ -120,11 +120,12 @@ async function start() {
     // audio.volume = 0; // TODO: make mute button
 
 
+    const _focus = () => focus();
     const canvas2 = document.querySelector('#b');
     const context2 = canvas2.getContext('2d');
     // init
     let { canvas, context } = init('a');
-
+    canvas.addEventListener('pointerenter', _focus);
     context.imageSmoothingEnabled = false;
     context2.imageSmoothingEnabled = false;
     initPointer();
@@ -1466,7 +1467,7 @@ async function start() {
             }
 
             if (gameIsOver) {
-            // if (true) {
+                // if (true) {
                 gameIsOver++;
 
                 context2.fillStyle = colors.black;
@@ -1529,6 +1530,7 @@ async function start() {
 
         window.removeEventListener('keydown', keyHandler);
         window.removeEventListener('keyup', keyHandler);
+        canvas.removeEventListener('pointerenter', _focus);
 
         // restart
         start();
