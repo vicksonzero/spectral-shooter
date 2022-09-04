@@ -26,7 +26,7 @@ async function start() {
      * // b=box()     // gives item
      */
 
-    const DIFFICULTY_RATIO = 1.3; // GoldenRatio=1.618
+    const DIFFICULTY_RATIO = 1.2; // GoldenRatio=1.618
 
     const BACKGROUND_COLOR = colors.bgGray;// colors.bgBrown;
     const PHYSICAL_DIMENSION = 0;
@@ -72,7 +72,7 @@ async function start() {
     let scoreMultiplierAck = 1;
 
     let energy = 0;
-    let respawnEnergyGoal = 5;
+    let respawnEnergyCost = 5;
     let respawnEnergyTimeLimit = 0;
     let levelUpEnergyGoal = 10;
 
@@ -133,7 +133,8 @@ async function start() {
 
     const waves = [
         // [waveTime (sec), spawnInterval (ms), maxEnemyCount, spawnCount, ...list],
-        [10 /*15*/, 2000, 10, 3, spawnBasicEnemy],
+        [10 /*15*/, 2000, 5, 3, spawnBasicEnemy],
+        [2 /*15*/, 2000, 10, 3],
         [30, 3000, 30, 3, spawnBasicEnemy, spawnBasicEnemy, spawnShooterEnemy],
         [20, 3000, 40, 3, spawnBasicEnemy, spawnShooterEnemy],
         [20, 3000, 50, 3, spawnBasicEnemy, spawnShooterEnemy],
@@ -647,7 +648,7 @@ async function start() {
         //     spawnCount,
         //     list: list.length,
         // });
-        for (let i = 0; i < (enemyCount > maxEnemyCount ? 1 : spawnCount); i++) {
+        for (let i = 0; list.length > 0 && i < (enemyCount > maxEnemyCount ? 1 : spawnCount); i++) {
             const freeSpace = getFreeSpace();
             if (!freeSpace) continue;
             spawnGhostFire.call(freeSpace, { x: 0, y: 0 }, list[(Math.random() * list.length) | 0]).hp = 50 * ENEMY_RESPAWN_TIME;
@@ -655,7 +656,7 @@ async function start() {
         }
         if (Date.now() >= nextWaveTime) {
             waveID++;
-            console.log('Wave up!')
+            console.log('Wave up!', waveID);
             nextWaveTime = Date.now() + (waves[waveID] ?? waves[--waveID])[0] * 1000;
         }
 
@@ -923,7 +924,7 @@ async function start() {
                     thisEntity.ttl = 0;
 
 
-                    spawnGraphicsEffect(3, thisEntity, -Math.PI / 2, 20, colors.white, energy + '/' + respawnEnergyGoal, 60);
+                    spawnGraphicsEffect(3, thisEntity, -Math.PI / 2, 20, colors.white, energy + '/' + respawnEnergyCost, 60);
                     // add to resurrection energy
                 }
 
@@ -953,7 +954,7 @@ async function start() {
                 if (enemyCollideWithPlayer && currentDimension == SPECTRAL_DIMENSION && thisEntity.dimension == PHYSICAL_DIMENSION) {
                     // damage enemy
                     audio.play('hit');
-                    thisEntity.hp -= 3;
+                    thisEntity.hp -= 5;
                     if (thisEntity.hp <= 0) {
                         score += 10 * (scoreMultiplier / levelUpEnergyGoal | 0);
                         scoreMultiplier++;
@@ -1048,7 +1049,9 @@ async function start() {
                     // player.dy = Math.sin(player.frontRotation) * Math.min(player.position.distance(pointer), player.speed * 1.5);
 
                     // after-image
-                    spawnSpriteEffect(1, player, player.frontRotation + 2 * Math.PI, 4, images.playerSpectralDash, 16);
+                    spawnSpriteEffect(1, player, player.frontRotation + Math.PI, 4, images.playerSpectralDash,
+                        (respawnEnergyTimeLimit - Date.now()) / 1000 * 4 | 0
+                    );
                 }
 
                 if (pointerPressed('left') && Date.now() >= player.nextCanShoot) {
@@ -1143,7 +1146,7 @@ async function start() {
             // multiplier limit, multiplier cap
             scoreMultiplier = Math.min(10 * levelUpEnergyGoal, scoreMultiplier);
             // energy
-            console.log('scoreMultiplier', (scoreMultiplier / levelUpEnergyGoal | 0), scoreMultiplierAck);
+            // console.log('scoreMultiplier', (scoreMultiplier / levelUpEnergyGoal | 0), scoreMultiplierAck);
             if (currentDimension == PHYSICAL_DIMENSION && entities.filter(e => e.box == 1).length < (scoreMultiplier / levelUpEnergyGoal | 0) - scoreMultiplierAck) {
                 const nextWeapon = Math.min(mainWeaponImages.length - 1, mainWeapon + 1);
                 const pos = getFreeSpace();
@@ -1155,7 +1158,7 @@ async function start() {
             // }
             // time is up
             if (currentDimension == SPECTRAL_DIMENSION && Date.now() >= respawnEnergyTimeLimit) {
-                if (energy < respawnEnergyGoal) {
+                if (energy < respawnEnergyCost) {
                     // game over
                     gameIsOver++;
 
@@ -1163,12 +1166,19 @@ async function start() {
                 } else {
                     // respawn
 
+                    if (energy >= respawnEnergyCost * 2) {
+                        // add 1 to multiplier
+                        scoreMultiplier += levelUpEnergyGoal;
+
+                        spawnGraphicsEffect(3, player, -Math.PI / 2, 20, colors.white, `Souls bonus (${respawnEnergyCost * 2}+)`, 60);
+                    }
+
                     currentDimension = PHYSICAL_DIMENSION;
                     player.dimension = currentDimension;
                     energy = 0;
-                    respawnEnergyGoal = Math.ceil(respawnEnergyGoal * DIFFICULTY_RATIO);
+                    respawnEnergyCost = Math.ceil(respawnEnergyCost * DIFFICULTY_RATIO);
                     /* #IfDev */
-                    console.log('new respawnEnergyGoal', respawnEnergyGoal);
+                    console.log('new respawnEnergyCost', respawnEnergyCost);
                     /* #EndIfDev */
                     audio.play('respawn');
 
@@ -1378,51 +1388,62 @@ async function start() {
             context2.textAlign = 'left';
             context2.fillStyle = colors.white;
             context2.font = '16px sans-serif';
-            context2.fillText('Score:', 64 - 40, 64 + 72 - 20);
+            context2.fillText('Score:', 64 - 40, 64 - 20);
             context2.font = '28px sans-serif';
-            context2.fillText(score, 64 - 40 + 48, 64 + 72 - 20);
+            context2.fillText(score, 64 - 40 + 48, 64 - 20);
 
             // combo
             if (scoreMultiplier > 10) {
                 context2.font = '16px sans-serif';
-                context2.fillText('Combo:', 64 - 40, 64 + 72 + 20 + 10);
+                context2.fillText('Combo:', 64 - 40, 64 + 20 + 10);
                 context2.textAlign = 'center';
                 // context2.font = '28px sans-serif';
-                context2.fillText((scoreMultiplier / levelUpEnergyGoal | 0) + 'x', 64 + 52, 64 + 72 + 20 + 10);
+                context2.fillText((scoreMultiplier / levelUpEnergyGoal | 0) + 'x', 64 + 52, 64 + 20 + 10);
 
                 context2.strokeStyle = colors.white;
                 context2.lineWidth = 4;
                 context2.beginPath();
-                context2.arc(64 + 52, 64 + 72 + 24, 24, Math.PI, Math.PI + (scoreMultiplier % levelUpEnergyGoal) / levelUpEnergyGoal * 2 * Math.PI);
+                context2.arc(64 + 52, 64 + 24, 24, Math.PI, Math.PI + (scoreMultiplier % levelUpEnergyGoal) / levelUpEnergyGoal * 2 * Math.PI);
                 context2.stroke();
             }
 
+            // Revive cost
+            const hasEnoughGhostFire = (entities.filter(e => e.returnHp != null).length >= (respawnEnergyCost - energy));
+            context2.textAlign = 'left';
+            context2.fillStyle = colors.white;
+            context2.font = '16px sans-serif';
+            context2.fillText('Revive cost:', canvas2.width - 64 - 40 - 48, 64 - 20);
+            context2.font = '28px sans-serif';
+            context2.fillStyle = !hasEnoughGhostFire ? colors.orange : colors.white;
+            context2.fillText(respawnEnergyCost + (!hasEnoughGhostFire ? '!!' : ''), canvas2.width - 64 - 40 + 48, 64 - 20);
+            context2.fillStyle = colors.white;
+
             // main weapon
             context2.beginPath();
-            context2.arc(64 - 40 + 20, 64 - 36 + 20, 20, 0, 2 * Math.PI);
+            context2.arc(64 - 40 + 20, canvas2.height - 64 + 20, 20, 0, 2 * Math.PI);
             context2.fill();
             if (mainWeaponImages[mainWeapon]) {
                 context2.drawImage(
                     mainWeaponImages[mainWeapon],
                     64 - 40 + 4,
-                    64 - 36 + 4,
+                    canvas2.height - 64 + 4,
                     32,
                     32
                 );
             }
             context2.font = '16px sans-serif';
             context2.textAlign = 'left';
-            context2.fillText(mainWeaponNames[mainWeapon], 64 - 40 + 48, 64 - 36 + 20 + 8);
+            context2.fillText(mainWeaponNames[mainWeapon], 64 - 40 + 48, canvas2.height - 64 + 20 + 8);
 
 
             if (!gameIsOver) {
                 // titles
-                context2.font = '96px sans-serif';
+                context2.font = '120px sans-serif';
                 context2.textAlign = 'center';
                 context2.fillStyle = colors.white;
 
                 if (currentDimension == SPECTRAL_DIMENSION && Date.now() < respawnEnergyTimeLimit) {
-                    context2.globalAlpha = 0.5;
+                    context2.globalAlpha = 0.8;
                     context2.fillText(((respawnEnergyTimeLimit - Date.now()) / 1000) | 0, canvas2.width / 2, canvas2.height / 2);
                 }
                 if (tutProgress == 0) {
@@ -1444,24 +1465,24 @@ async function start() {
                 }
                 // if (tutProgress == 1) context2.fillText('Point mouse at ghost fire', canvas2.width / 2, 520);
                 else if (tutProgress == 2 && score < 100 && currentDimension == PHYSICAL_DIMENSION) {
-                    context2.fillText('Use mouse to aim, left click to shoot,', canvas2.width / 2, 520);
-                    context2.fillText('Avoid physical enemies.', canvas2.width / 2, 560);
+                    context2.fillText('Use mouse to aim, left click to shoot,', canvas2.width / 2, 60);
+                    context2.fillText('Avoid physical enemies.', canvas2.width / 2, 100);
                 }
                 else if (tutProgress == 2 && score < 300 && currentDimension == PHYSICAL_DIMENSION) {
-                    context2.fillText(`Monsters can respawn from the dead, but so can you.`, canvas2.width / 2, 520);
-                    context2.fillText(`Go back to the Spectral world by leveling up!`, canvas2.width / 2, 560);
+                    context2.fillText(`Monsters can respawn from the dead, but so can you.`, canvas2.width / 2, 60);
+                    context2.fillText(`Collect an upgrade to start Spectral Dash!`, canvas2.width / 2, 100);
                 }
 
 
-                if (currentDimension == SPECTRAL_DIMENSION && respawnEnergyGoal > energy) {
+                if (currentDimension == SPECTRAL_DIMENSION && respawnEnergyCost > energy) {
                     if (tutProgress == 1) {
-                        // context2.fillText(`Point mouse at ghost fire,`, canvas2.width / 2, 520);
-                        context2.fillText(`Use keyboard or click to move in spectral form,`, canvas2.width / 2, 520);
+                        // context2.fillText(`Point mouse at ghost fire,`, canvas2.width / 2, 60);
+                        context2.fillText(`Use keyboard or click to move in spectral form,`, canvas2.width / 2, 100);
                     }
-                    context2.fillText(`Collect ${energy}/${respawnEnergyGoal} ghost fire to respawn.`, canvas2.width / 2, 560);
+                    context2.fillText(`Collect ${energy}/${respawnEnergyCost} souls to respawn.`, canvas2.width / 2, 60);
 
                 } else if (currentDimension == SPECTRAL_DIMENSION) {
-                    context2.fillText(`Respawning shortly...`, canvas2.width / 2, 560);
+                    context2.fillText(`Respawning shortly...`, canvas2.width / 2, 100);
                 }
 
             }
@@ -1508,7 +1529,7 @@ async function start() {
 
                 context2.textAlign = 'center';
                 context2.fillText('Press <Enter> to restart', canvas2.width / 2, 500);
-                context2.fillText(`Collect ${energy}/${respawnEnergyGoal} ghost fire to respawn.`, canvas2.width / 2, 560);
+                context2.fillText(`Collect ${energy}/${respawnEnergyCost} souls to respawn.`, canvas2.width / 2, 560);
             }
 
 
