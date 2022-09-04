@@ -7,9 +7,11 @@ Made for the js13k game jam 2022
 
 # Credits
 
-- Kenney.nl !!!!
-- Kontra.js
+- [Kenney.nl](https://kenney.nl) !!!!
+- [Kontra.js](https://github.com/straker/kontra) by straker
 - Webpack
+- mvasilkov for telling me about 1-bit sprite compression
+- 
 
 # How to compress images
 
@@ -158,7 +160,10 @@ Language
 - [ ] Enemies
 - [ ] Guns
 - [ ] Add codenames like "Bringer of hell", "Deader get deader"
+- [ ] Pause game
+- [ ] Mute sound
 
 ## Minimize
 
 - [ ] ModuleConcatenationPlugin
+- [ ] https://lifthrasiir.github.io/roadroller/
