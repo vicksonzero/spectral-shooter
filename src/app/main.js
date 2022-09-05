@@ -62,7 +62,10 @@ async function start() {
     const DIMENSION_TRANSITION_LENGTH3 = 1000;
 
     const fixedDeltaTime = (1000 / 60) | 0;
+
     let fixedGameTime = 0;
+    let spectralGameTime = 0;
+
     let gameIsOver = 0;
     let gameIsPaused = 0;
 
@@ -90,13 +93,12 @@ async function start() {
 
 
     // stats:
-    let time = 0;
+    let highestComboTime = 0;
+    let highestCombo = 0;
     // let score = score;
     // let wave index = waveId;
-    let killsA = 0;
-    let killsB = 0;
-    let countCompleteKills = 0;
-    let timeSpentInSpectralWorld = 0;
+    let countKills = [0, 0, 0];
+    let countCompleteKills = [0, 0, 0];
 
 
 
@@ -240,6 +242,7 @@ async function start() {
             anchor: { x: 0.5, y: 0.5 },
 
             // custom properties
+            eType: 0,
             hp: 5,
             images: [images.basicEnemyPhysical, images.basicEnemySpectral],
             dimension: PHYSICAL_DIMENSION,
@@ -278,6 +281,7 @@ async function start() {
         // entity.y = this.y - entity.height / 2;
         entities.push(entity);
     };
+    spawnBasicEnemy.eType = 0;
     function spawnFatEnemy() {
         // console.log('spawnBasicEnemy', this.x, this.y);
         const entity = Sprite({
@@ -290,6 +294,7 @@ async function start() {
             anchor: { x: 0.5, y: 0.5 },
 
             // custom properties
+            eType: 2,
             hp: 15,
             size: 32,
             images: [images.basicEnemyPhysical, images.basicEnemySpectral],
@@ -329,6 +334,7 @@ async function start() {
         // entity.y = this.y - entity.height / 2;
         entities.push(entity);
     };
+    spawnFatEnemy.eType = 2;
     function spawnShooterEnemy() {
         // console.log('spawnShooterEnemy', this.x, this.y);
         const entity = Sprite({
@@ -341,6 +347,7 @@ async function start() {
             anchor: { x: 0.5, y: 0.5 },
 
             // custom properties
+            eType: 1,
             hp: 3,
             team: TEAM_ENEMY,
             images: [images.shooterEnemyPhysical, images.shooterEnemySpectral],
@@ -381,6 +388,7 @@ async function start() {
         // entity.y = this.y - entity.height / 2;
         entities.push(entity);
     };
+    spawnShooterEnemy.eType = 1;
     function spawnGhostFire(knockbackDir, spawnEntity) {
         /* #IfDev */
         // console.log('spawnGhostFire', this.x, this.y, knockbackDir.x, knockbackDir.y);
@@ -420,6 +428,7 @@ async function start() {
             },
 
             // custom properties
+            eType: spawnEntity.eType,
             team: TEAM_ENEMY,
             images: [images.ghostFirePhysical, images.ghostFireSpectral],
             dimension: 1,
@@ -439,6 +448,7 @@ async function start() {
         entities.push(entity);
         return entity;
     }
+    spawnGhostFire.eType = -1;
 
     function spawnSpriteEffect(type, position, direction, distance, image, ttl) {
         /**
@@ -527,7 +537,7 @@ async function start() {
                     if (type == 2) context.arc(0, 0, (this.ttl / this.ttl2 * distance), 0, 2 * Math.PI);
                     context.stroke();
                 } else {
-                    context2.font = '16px sans-serif';
+                    context2.font = '16px sans-serif'; // sm
                     context2.fillStyle = color;
                     context2.textAlign = 'center';
                     context2.fillText(text, this.x * 2, this.y * 2);
@@ -686,6 +696,7 @@ async function start() {
                 energy++;
                 scoreMultiplier++;
                 entity.onDeathSpawn?.();
+                countKills[entity.eType]++;
 
                 audio.play('explosion');
                 let rotation = Math.random() * Math.PI;
@@ -803,7 +814,19 @@ async function start() {
             if (gameIsOver) return;
             if (gameIsPaused) return;
             fixedGameTime += fixedDeltaTime;
-            console.log('fixedGameTime', fixedGameTime);
+            if (currentDimension == SPECTRAL_DIMENSION) spectralGameTime += fixedDeltaTime;
+
+            if ((scoreMultiplier / levelUpEnergyGoal | 0) > highestCombo) {
+                highestComboTime = 0;
+                highestCombo = (scoreMultiplier / levelUpEnergyGoal | 0);
+                console.log('combo up', scoreMultiplier, levelUpEnergyGoal, highestCombo);
+            }
+            if ((scoreMultiplier / levelUpEnergyGoal | 0) == highestCombo) {
+                highestComboTime += fixedDeltaTime;
+                console.log('highestComboTime', highestCombo, highestComboTime / 1000 | 0);
+
+            }
+            // console.log('fixedGameTime', fixedGameTime);
             [
                 effectsPool,
                 ...entities,
@@ -933,6 +956,7 @@ async function start() {
                     energy++;
                     enemyCount--;
                     thisEntity.ttl = 0;
+                    countCompleteKills[thisEntity.eType]++;
 
 
                     spawnGraphicsEffect(3, thisEntity, -Math.PI / 2, 20, colors.white, energy + '/' + respawnEnergyCost, 60);
@@ -972,6 +996,7 @@ async function start() {
                         audio.play('explosion');
                         thisEntity.ttl = 0;
                         thisEntity.onDeathSpawn?.();
+                        countKills[thisEntity.eType]++;
                     }
                     // knockback player
 
@@ -1388,7 +1413,7 @@ async function start() {
 
             // context2.globalAlpha = 1;
 
-            // context2.font = '16px sans-serif';
+            // context2.font = '16px sans-serif'; // sm
             // context2.fillStyle = colors.white;
             // context2.textAlign = 'right';
             // context2.fillText(currentDimension == SPECTRAL_DIMENSION ? 'Respawn' : '1-up', respawnEnergyGoalX - 4, _y + 40);
@@ -1398,17 +1423,17 @@ async function start() {
             // score
             context2.textAlign = 'left';
             context2.fillStyle = colors.white;
-            context2.font = '16px sans-serif';
+            context2.font = '16px sans-serif'; // sm
             context2.fillText('Score:', 64 - 40, 64 - 20);
-            context2.font = '28px sans-serif';
+            context2.font = '28px sans-serif'; // md
             context2.fillText(score, 64 - 40 + 48, 64 - 20);
 
             // combo
             if (scoreMultiplier > 10) {
-                context2.font = '16px sans-serif';
+                context2.font = '16px sans-serif'; // sm
                 context2.fillText('Combo:', 64 - 40, 64 + 20 + 10);
                 context2.textAlign = 'center';
-                // context2.font = '28px sans-serif';
+                // context2.font = '28px sans-serif'; // md
                 context2.fillText((scoreMultiplier / levelUpEnergyGoal | 0) + 'x', 64 + 52, 64 + 20 + 10);
 
                 context2.strokeStyle = colors.white;
@@ -1422,11 +1447,11 @@ async function start() {
             const hasEnoughGhostFire = (entities.filter(e => e.returnHp != null).length >= (respawnEnergyCost - energy));
             context2.textAlign = 'left';
             context2.fillStyle = colors.white;
-            context2.font = '16px sans-serif';
-            context2.fillText('Revive cost:', canvas2.width - 64 - 40 - 48, 64 - 20);
-            context2.font = '28px sans-serif';
+            context2.font = '16px sans-serif'; // sm
+            context2.fillText('Revive cost:', canvas2.width - 64 - 48 - 48, 64 - 20);
+            context2.font = '28px sans-serif'; // md
             context2.fillStyle = !hasEnoughGhostFire ? colors.orange : colors.white;
-            context2.fillText(respawnEnergyCost + (!hasEnoughGhostFire ? '!!' : ''), canvas2.width - 64 - 40 + 48, 64 - 20);
+            context2.fillText(respawnEnergyCost + (!hasEnoughGhostFire ? '!!' : ''), canvas2.width - 64 - 48 + 48, 64 - 20);
             context2.fillStyle = colors.white;
 
             // main weapon
@@ -1442,14 +1467,14 @@ async function start() {
                     32
                 );
             }
-            context2.font = '16px sans-serif';
+            context2.font = '16px sans-serif'; // sm
             context2.textAlign = 'left';
             context2.fillText(mainWeaponNames[mainWeapon], 64 - 40 + 48, canvas2.height - 64 + 20 + 8);
 
 
             if (!gameIsOver) {
                 // titles
-                context2.font = '120px sans-serif';
+                context2.font = '120px sans-serif'; // xl
                 context2.textAlign = 'center';
                 context2.fillStyle = colors.white;
 
@@ -1458,12 +1483,12 @@ async function start() {
                     context2.fillText(((respawnEnergyTimeLimit - fixedGameTime) / 1000) | 0, canvas2.width / 2, canvas2.height / 2);
                 }
                 if (tutProgress == 0) {
-                    context2.font = '72px sans-serif';
+                    context2.font = '72px sans-serif'; // lg
                     context2.fillText('Spectral-Shooter', canvas2.width / 2, canvas2.height / 2 - 120);
                 }
 
                 // style for tutorial text
-                context2.font = '16px sans-serif';
+                context2.font = '16px sans-serif'; // sm
                 context2.textAlign = 'center';
                 context2.fillStyle = colors.white;
                 context2.globalAlpha = 1;
@@ -1510,14 +1535,14 @@ async function start() {
                 let _y = 180;
                 context2.fillStyle = colors.white;
                 context2.textAlign = 'center';
-                context2.font = '72px sans-serif';
+                context2.font = '72px sans-serif'; // lg
                 context2.fillText('Game Over', canvas2.width / 2, _y += 20);
 
                 _y += 20
                 _y += 20
                 let __y = _y;
 
-                context2.font = '16px sans-serif';
+                context2.font = '16px sans-serif'; // sm
                 context2.textAlign = 'right';
                 context2.fillText('Score: ', canvas2.width / 2, _y += 20);
                 _y += 20
@@ -1528,14 +1553,23 @@ async function start() {
 
 
                 context2.textAlign = 'left';
-                context2.font = '28px sans-serif';
+                context2.font = '28px sans-serif'; // md
                 context2.fillText(score, canvas2.width / 2, __y += 20); // Score
-                context2.font = '16px sans-serif';
+                context2.font = '16px sans-serif'; // sm
                 __y += 20
-                context2.fillText(`${time}s (${0}s in spectral world)`, canvas2.width / 2, __y += 20); // Time
-                context2.fillText(`0x (10s)`, canvas2.width / 2, __y += 20); // Highest combo
-                context2.fillText(`${0} (${0}, 0, 0)`, canvas2.width / 2, __y += 20); // Kills
-                context2.fillText(`${0} (${0}, 0, 0)`, canvas2.width / 2, __y += 20); // Complete kills
+                context2.fillText(`${(fixedGameTime / 1000 / 60) | 0}m${(fixedGameTime / 1000 | 0) % 60}s (${spectralGameTime / 1000 | 0}s in spectral world)`, canvas2.width / 2, __y += 20); // Time
+                context2.fillText(`${highestCombo}x (${(highestComboTime / 100 | 0) / 10}s)`, canvas2.width / 2, __y += 20); // Highest combo
+
+                context2.fillText(
+                    `${countKills.reduce((a, b) => a + b, 0)} (${countKills.join(', ')})`,
+                    canvas2.width / 2,
+                    __y += 20
+                ); // Kills
+                context2.fillText(
+                    `${countCompleteKills.reduce((a, b) => a + b, 0)} (${countCompleteKills.join(', ')})`,
+                    canvas2.width / 2,
+                    __y += 20
+                ); // Souls collected
 
 
                 context2.textAlign = 'center';
@@ -1546,7 +1580,7 @@ async function start() {
             if (gameIsPaused) {
                 context2.fillStyle = colors.white;
                 context2.textAlign = 'center';
-                context2.font = '16px sans-serif';
+                context2.font = '16px sans-serif'; // sm
                 context2.fillText('Game Paused', canvas2.width / 2, 500);
             }
 
