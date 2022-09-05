@@ -93,8 +93,8 @@ async function start() {
 
 
     // stats:
-    let highestComboTime = 0;
-    let highestCombo = 0;
+    let highestHeatTime = 0;
+    let highestHeat = 0;
     // let score = score;
     // let wave index = waveId;
     let countKills = [0, 0, 0];
@@ -122,7 +122,7 @@ async function start() {
     // ];
 
     const audio = new ArcadeAudio();
-    audio.volume = 0; // TODO: make mute button
+    // audio.volume = 0; // TODO: make mute button
 
 
     const _focus = () => focus();
@@ -816,14 +816,14 @@ async function start() {
             fixedGameTime += fixedDeltaTime;
             if (currentDimension == SPECTRAL_DIMENSION) spectralGameTime += fixedDeltaTime;
 
-            if ((scoreMultiplier / levelUpEnergyGoal | 0) > highestCombo) {
-                highestComboTime = 0;
-                highestCombo = (scoreMultiplier / levelUpEnergyGoal | 0);
-                console.log('combo up', scoreMultiplier, levelUpEnergyGoal, highestCombo);
+            if ((scoreMultiplier / levelUpEnergyGoal | 0) > highestHeat) {
+                highestHeatTime = 0;
+                highestHeat = (scoreMultiplier / levelUpEnergyGoal | 0);
+                // console.log('heat up', scoreMultiplier, levelUpEnergyGoal, highestHeat);
             }
-            if ((scoreMultiplier / levelUpEnergyGoal | 0) == highestCombo) {
-                highestComboTime += fixedDeltaTime;
-                console.log('highestComboTime', highestCombo, highestComboTime / 1000 | 0);
+            if ((scoreMultiplier / levelUpEnergyGoal | 0) == highestHeat) {
+                highestHeatTime += fixedDeltaTime;
+                // console.log('highestHeatTime', highestHeat, highestHeatTime / 1000 | 0);
 
             }
             // console.log('fixedGameTime', fixedGameTime);
@@ -1428,10 +1428,10 @@ async function start() {
             context2.font = '28px sans-serif'; // md
             context2.fillText(score, 64 - 40 + 48, 64 - 20);
 
-            // combo
+            // Heat
             if (scoreMultiplier > 10) {
                 context2.font = '16px sans-serif'; // sm
-                context2.fillText('Combo:', 64 - 40, 64 + 20 + 10);
+                context2.fillText('Heat:', 64 - 40, 64 + 20 + 10);
                 context2.textAlign = 'center';
                 // context2.font = '28px sans-serif'; // md
                 context2.fillText((scoreMultiplier / levelUpEnergyGoal | 0) + 'x', 64 + 52, 64 + 20 + 10);
@@ -1547,7 +1547,7 @@ async function start() {
                 context2.fillText('Score: ', canvas2.width / 2, _y += 20);
                 _y += 20
                 context2.fillText('Time: ', canvas2.width / 2, _y += 20);
-                context2.fillText('Highest combo: ', canvas2.width / 2, _y += 20);
+                context2.fillText('Highest heat: ', canvas2.width / 2, _y += 20);
                 context2.fillText('Kills: ', canvas2.width / 2, _y += 20);
                 context2.fillText('Souls collected: ', canvas2.width / 2, _y += 20);
 
@@ -1558,7 +1558,7 @@ async function start() {
                 context2.font = '16px sans-serif'; // sm
                 __y += 20
                 context2.fillText(`${(fixedGameTime / (1000 * 60)) | 0}m${(fixedGameTime / 1000 | 0) % 60}s (${spectralGameTime / 1000 | 0}s in spectral world)`, canvas2.width / 2, __y += 20); // Time
-                context2.fillText(`${highestCombo}x (${(highestComboTime / 100 | 0) / 10}s)`, canvas2.width / 2, __y += 20); // Highest combo
+                context2.fillText(`${highestHeat}x (${(highestHeatTime / 100 | 0) / 10}s)`, canvas2.width / 2, __y += 20); // Highest heat
 
                 context2.fillText(
                     `${countKills.reduce((a, b) => a + b, 0)} (${countKills.join(', ')})`,
