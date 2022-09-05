@@ -39,10 +39,10 @@ async function start() {
     const MAIN_NONE = 0 // none
     const MAIN_DUAL_PISTOL = 1 // dual pistol (low spray)
     const MAIN_MACHINE_GUN = 2 // machine gun (mid spray)
-    const MAIN_SHOTGUN = 3 // shotgun (no spray)
+    const MAIN_SHOTGUN = 3 // shotgun (max spray)
     const MAIN_DUAL_UZI = 4 // dual uzi (no spray)
     const MAIN_MINI_GUN = 5 // mini gun (mid spray)
-    const MAIN_SPREAD_GUN = 6 // spread gun (no spray)
+    const MAIN_SPREAD_GUN = 6 // spread gun (max spray)
     const MAIN_ROCKET = 7 // rocket (no spray)
     const MAIN_NUKE = 8 // nuke (no spray)
 
@@ -61,7 +61,10 @@ async function start() {
     const DIMENSION_TRANSITION_LENGTH2 = 1000;
     const DIMENSION_TRANSITION_LENGTH3 = 1000;
 
+    const fixedDeltaTime = (1000 / 60) | 0;
+    let fixedGameTime = 0;
     let gameIsOver = 0;
+    let gameIsPaused = 0;
 
     let currentDimension = 0; // 0=physical, 1=spectral
     let dimensionTransitionUntil = 0;
@@ -117,7 +120,7 @@ async function start() {
     // ];
 
     const audio = new ArcadeAudio();
-    // audio.volume = 0; // TODO: make mute button
+    audio.volume = 0; // TODO: make mute button
 
 
     const _focus = () => focus();
@@ -182,7 +185,7 @@ async function start() {
         team: TEAM_PLAYER, // 0=player, 1=enemy
         images: [images.playerPhysical, images.playerSpectral],
         speed: 1.5,
-        nextCanShoot: Date.now(),
+        nextCanShoot: fixedGameTime,
         dimension: PHYSICAL_DIMENSION, // 0=physical, 1=spectral
         frontRotation: 0,
     });
@@ -246,11 +249,11 @@ async function start() {
             targetX: this.x,
             targetY: this.y,
             speed: 1,
-            aiNextTick: Date.now(),
-            hitEffectUntil: Date.now(),
+            aiNextTick: fixedGameTime,
+            hitEffectUntil: fixedGameTime,
             team: TEAM_ENEMY,
             render() {
-                context.globalAlpha = this.hitEffectUntil > Date.now() ? 0.5 : 1;
+                context.globalAlpha = this.hitEffectUntil > fixedGameTime ? 0.5 : 1;
                 // @ifdef SPRITE_IMAGE
                 if (this.image) {
                     context.drawImage(
@@ -297,11 +300,11 @@ async function start() {
             targetX: this.x,
             targetY: this.y,
             speed: 0.65,
-            aiNextTick: Date.now(),
-            hitEffectUntil: Date.now(),
+            aiNextTick: fixedGameTime,
+            hitEffectUntil: fixedGameTime,
             team: TEAM_ENEMY,
             render() {
-                context.globalAlpha = this.hitEffectUntil > Date.now() ? 0.5 : 1;
+                context.globalAlpha = this.hitEffectUntil > fixedGameTime ? 0.5 : 1;
                 // @ifdef SPRITE_IMAGE
                 if (this.image) {
                     context.drawImage(
@@ -348,12 +351,12 @@ async function start() {
             targetX: this.x,
             targetY: this.y,
             speed: 1,
-            aiNextTick: Date.now(),
-            hitEffectUntil: Date.now(),
+            aiNextTick: fixedGameTime,
+            hitEffectUntil: fixedGameTime,
             team: TEAM_ENEMY,
-            nextCanShoot: Date.now() + 1500,
+            nextCanShoot: fixedGameTime + 1500,
             render() {
-                context.globalAlpha = this.hitEffectUntil > Date.now() ? 0.5 : 1;
+                context.globalAlpha = this.hitEffectUntil > fixedGameTime ? 0.5 : 1;
                 // @ifdef SPRITE_IMAGE
                 if (this.image) {
                     context.drawImage(
@@ -392,7 +395,7 @@ async function start() {
             anchor: { x: 0.5, y: 0.5 },
 
             render() {
-                const yy = Math.sin(Date.now() % 500 / 500 * 2 * Math.PI) * 1;
+                const yy = Math.sin(fixedGameTime % 500 / 500 * 2 * Math.PI) * 1;
                 // @ifdef SPRITE_IMAGE
                 if (this.image) {
                     if (currentDimension == PHYSICAL_DIMENSION && this.returnHp - this.hp > 180) {
@@ -427,7 +430,7 @@ async function start() {
             speed: 0.2,
             targetX: this.x,
             targetY: this.y,
-            aiNextTick: Date.now() + 1000,
+            aiNextTick: fixedGameTime + 1000,
             returnHp: 60 * ENEMY_RESPAWN_TIME,
             spawnEntity,
         });
@@ -553,11 +556,11 @@ async function start() {
 
                     if (this.mainWeapon) { // not zero
                         if (mainWeapon == MAIN_NONE) {
-                            nextWaveTime = Date.now() + waves[waveID][0] * 1000;
+                            nextWaveTime = fixedGameTime + waves[waveID][0] * 1000;
                             tutProgress = 1;
                         }
                         mainWeapon = this.mainWeapon;
-                        nextSpawnTick = Date.now() + 500;
+                        nextSpawnTick = fixedGameTime + 500;
                         // console.log(mainWeapon);
                     }
 
@@ -575,7 +578,7 @@ async function start() {
                     currentDimension = SPECTRAL_DIMENSION;
                     player.dimension = currentDimension;
 
-                    respawnEnergyTimeLimit = Date.now() + 10 * 1000;
+                    respawnEnergyTimeLimit = fixedGameTime + 11 * 1000;
 
                     entities
                         .filter(entity => entity != player && player.position.distance(entity) < 100)
@@ -593,11 +596,11 @@ async function start() {
                 context.globalAlpha = 1;
                 context.strokeStyle = colors.darkOrange;
                 context.beginPath();
-                context.ellipse(0, 0, 6, 12, (Date.now() % 2000) / 2000 * 2 * Math.PI, 0, 2 * Math.PI);
+                context.ellipse(0, 0, 6, 12, (fixedGameTime % 2000) / 2000 * 2 * Math.PI, 0, 2 * Math.PI);
                 context.stroke();
                 context.strokeStyle = colors.blue;
                 context.beginPath();
-                context.ellipse(0, 0, 6, 10, -(Date.now() % 3000) / 3000 * 2 * Math.PI, 0, 2 * Math.PI);
+                context.ellipse(0, 0, 6, 10, -(fixedGameTime % 3000) / 3000 * 2 * Math.PI, 0, 2 * Math.PI);
                 context.stroke();
 
                 if (this.mainWeapon) { // not zero
@@ -630,7 +633,7 @@ async function start() {
 
     function HandleSpawnTick() {
         // spawner
-        if (nextSpawnTick == -1 || nextSpawnTick > Date.now()) return;
+        if (nextSpawnTick == -1 || nextSpawnTick > fixedGameTime) return;
 
         const [
             waveTime,
@@ -654,13 +657,13 @@ async function start() {
             spawnGhostFire.call(freeSpace, { x: 0, y: 0 }, list[(Math.random() * list.length) | 0]).hp = 50 * ENEMY_RESPAWN_TIME;
             enemyCount++;
         }
-        if (Date.now() >= nextWaveTime) {
+        if (fixedGameTime >= nextWaveTime) {
             waveID++;
             console.log('Wave up!', waveID);
-            nextWaveTime = Date.now() + (waves[waveID] ?? waves[--waveID])[0] * 1000;
+            nextWaveTime = fixedGameTime + (waves[waveID] ?? waves[--waveID])[0] * 1000;
         }
 
-        nextSpawnTick = Date.now() + spawnInterval + Math.random() * 2000;
+        nextSpawnTick = fixedGameTime + spawnInterval + Math.random() * 2000;
     }
     function bulletUpdate(dt) {
         this.advance(dt);
@@ -675,7 +678,7 @@ async function start() {
 
             // damage enemy
             entity.hp -= 1;
-            entity.hitEffectUntil = Date.now() + 60;
+            entity.hitEffectUntil = fixedGameTime + 60;
             if (entity.hp <= 0) {
                 const addScore = 10 * (scoreMultiplier / levelUpEnergyGoal | 0);
                 score += addScore;
@@ -711,7 +714,7 @@ async function start() {
             player.dimension = currentDimension;
 
             dimensionAlpha = 0;
-            dimensionTransitionUntil = Date.now() + DIMENSION_TRANSITION_LENGTH1;
+            dimensionTransitionUntil = fixedGameTime + DIMENSION_TRANSITION_LENGTH1;
             // console.log('currentDimension', currentDimension);
 
             player.dx = 0;
@@ -719,7 +722,7 @@ async function start() {
             energy = 0;
             scoreMultiplier = levelUpEnergyGoal;
             scoreMultiplierAck = 1;
-            respawnEnergyTimeLimit = Date.now() + 13 * 1000;
+            respawnEnergyTimeLimit = fixedGameTime + 14 * 1000;
             entities.filter(e => e.box == 1).forEach(e => e.ttl = 0);
 
             audio.play('death');
@@ -764,6 +767,7 @@ async function start() {
             32: 's', /* space */
             8: 'b', /* backspace */
             13: 'en', /* enter */
+            9: 'tb', /* tab */
         };
 
         if (!keyMap[w]) return;
@@ -782,6 +786,10 @@ async function start() {
             restart();
             input.en = 0;
         }
+        if (input.tb && 'tb' == keyMap[w] && !gameIsOver) {
+            gameIsPaused = !gameIsPaused;
+            input.tb = 0;
+        }
         // END toggles quick hack
 
         e.preventDefault();
@@ -793,6 +801,9 @@ async function start() {
     let loop = GameLoop({  // create the main game loop
         update() { // update the game state
             if (gameIsOver) return;
+            if (gameIsPaused) return;
+            fixedGameTime += fixedDeltaTime;
+            console.log('fixedGameTime', fixedGameTime);
             [
                 effectsPool,
                 ...entities,
@@ -816,13 +827,13 @@ async function start() {
                 if (thisEntity.targetX != null) {
                     const distToPlayer = player.position.distance(thisEntity);
 
-                    if (thisEntity.b?.includes('<') && Date.now() > thisEntity.aiNextTick && thisEntity.dimension == player.dimension) {
+                    if (thisEntity.b?.includes('<') && fixedGameTime > thisEntity.aiNextTick && thisEntity.dimension == player.dimension) {
                         // chase target
                         const rotation = angleToTarget(player, thisEntity) - Math.PI / 2 + Math.random() - 0.5;
                         thisEntity.targetX = player.x + Math.cos(rotation) * thisEntity.strafe;
                         thisEntity.targetY = player.y + Math.sin(rotation) * thisEntity.strafe;
                         thisEntity.s = 1 * thisEntity.speed;
-                        if (thisEntity.strafe > 0) thisEntity.aiNextTick = Date.now() + 3000;
+                        if (thisEntity.strafe > 0) thisEntity.aiNextTick = fixedGameTime + 3000;
 
                     } else if (thisEntity.b?.includes('>') && thisEntity.dimension == player.dimension) {
                         // avoid target
@@ -830,27 +841,27 @@ async function start() {
                             thisEntity.targetX = thisEntity.x + (thisEntity.x - player.x) / distToPlayer * 100;
                             thisEntity.targetY = thisEntity.y + (thisEntity.y - player.y) / distToPlayer * 100;
                             thisEntity.s = 0.5 * thisEntity.speed;
-                            thisEntity.aiNextTick = Date.now() + 2000;
+                            thisEntity.aiNextTick = fixedGameTime + 2000;
 
-                        } else if (Date.now() > thisEntity.aiNextTick) {
+                        } else if (fixedGameTime > thisEntity.aiNextTick) {
                             const randomVector = randomUnitVector();
                             const randomDistance = Math.random() * 32 + 16;
                             thisEntity.targetX = thisEntity.x + randomVector.x * randomDistance;
                             thisEntity.targetY = thisEntity.y + randomVector.y * randomDistance;
                             thisEntity.s = 0.5 * thisEntity.speed;
-                            thisEntity.aiNextTick = Date.now() + 2000;
+                            thisEntity.aiNextTick = fixedGameTime + 2000;
                         }
-                    } else if (thisEntity.b?.includes('.') && Date.now() > thisEntity.aiNextTick) {
+                    } else if (thisEntity.b?.includes('.') && fixedGameTime > thisEntity.aiNextTick) {
                         // wander
                         const randomVector = randomUnitVector();
                         const randomDistance = Math.random() * 32 + 16;
                         thisEntity.targetX = thisEntity.x + randomVector.x * randomDistance;
                         thisEntity.targetY = thisEntity.y + randomVector.y * randomDistance;
                         thisEntity.s = 0.5 * thisEntity.speed;
-                        thisEntity.aiNextTick = Date.now() + 2000;
+                        thisEntity.aiNextTick = fixedGameTime + 2000;
                     }
                     // shoot enemy bullet
-                    if (thisEntity.b?.includes('s') && currentDimension == thisEntity.dimension && distToPlayer < 250 && Date.now() >= thisEntity.nextCanShoot) {
+                    if (thisEntity.b?.includes('s') && currentDimension == thisEntity.dimension && distToPlayer < 250 && fixedGameTime >= thisEntity.nextCanShoot) {
                         /* #IfDev */
                         // console.log('enemy shoot');
                         /* #EndIfDev */
@@ -870,7 +881,7 @@ async function start() {
                             render() {
                                 context.fillStyle = colors.orange;
                                 context.beginPath();
-                                context.ellipse(this.width / 2, this.height / 2, 5, 3, /* this.seed * Math.PI + */ 2 * Math.PI * (Date.now() % 1000) / 1000, 0, 2 * Math.PI);
+                                context.ellipse(this.width / 2, this.height / 2, 5, 3, /* this.seed * Math.PI + */ 2 * Math.PI * (fixedGameTime % 1000) / 1000, 0, 2 * Math.PI);
                                 context.fill();
                             },
 
@@ -883,7 +894,7 @@ async function start() {
                             bulletSpeed,
                             team: TEAM_ENEMY,
                         });
-                        thisEntity.nextCanShoot = Date.now() + 2000;
+                        thisEntity.nextCanShoot = fixedGameTime + 2000;
                     }
                     // move
                     const distToTarget = Math.hypot(thisEntity.x - thisEntity.targetX, thisEntity.y - thisEntity.targetY);
@@ -936,7 +947,7 @@ async function start() {
                     player.dimension = currentDimension;
 
                     dimensionAlpha = 0;
-                    dimensionTransitionUntil = Date.now() + DIMENSION_TRANSITION_LENGTH1;
+                    dimensionTransitionUntil = fixedGameTime + DIMENSION_TRANSITION_LENGTH1;
                     // console.log('currentDimension', currentDimension);
 
                     player.dx = 0;
@@ -944,7 +955,7 @@ async function start() {
                     energy = 0;
                     scoreMultiplier = levelUpEnergyGoal;
                     scoreMultiplierAck = 1;
-                    respawnEnergyTimeLimit = Date.now() + 13 * 1000;
+                    respawnEnergyTimeLimit = fixedGameTime + 13 * 1000;
                     entities.filter(e => e.box == 1).forEach(e => e.ttl = 0);
 
                     audio.play('death');
@@ -1050,11 +1061,11 @@ async function start() {
 
                     // after-image
                     spawnSpriteEffect(1, player, player.frontRotation + Math.PI, 4, images.playerSpectralDash,
-                        (respawnEnergyTimeLimit - Date.now()) / 1000 * 4 | 0
+                        (respawnEnergyTimeLimit - fixedGameTime) / 1000 * 4 | 0
                     );
                 }
 
-                if (pointerPressed('left') && Date.now() >= player.nextCanShoot) {
+                if (pointerPressed('left') && fixedGameTime >= player.nextCanShoot) {
                     // console.log('pointerPressed', mainWeapon);
                     if (currentDimension == PHYSICAL_DIMENSION && mainWeapon == MAIN_DUAL_PISTOL) {
                         const bulletSpeed = 20;
@@ -1079,7 +1090,7 @@ async function start() {
                             team: TEAM_PLAYER,
                         });
                         gunSide = -gunSide;
-                        player.nextCanShoot = Date.now() + 200;
+                        player.nextCanShoot = fixedGameTime + 200;
                         audio.play('shoot');
                     }
                     if (currentDimension == PHYSICAL_DIMENSION && mainWeapon == MAIN_MACHINE_GUN) {
@@ -1105,7 +1116,7 @@ async function start() {
                             bulletSpeed,
                             team: TEAM_PLAYER,
                         });
-                        player.nextCanShoot = Date.now() + 100;
+                        player.nextCanShoot = fixedGameTime + 100;
                         audio.play('shoot');
                     }
                     if (currentDimension == PHYSICAL_DIMENSION && mainWeapon == MAIN_SHOTGUN) {
@@ -1137,7 +1148,7 @@ async function start() {
                             }, i * 10);
 
                         }
-                        player.nextCanShoot = Date.now() + 800;
+                        player.nextCanShoot = fixedGameTime + 800;
                     }
                 }
             }
@@ -1157,7 +1168,7 @@ async function start() {
 
             // }
             // time is up
-            if (currentDimension == SPECTRAL_DIMENSION && Date.now() >= respawnEnergyTimeLimit) {
+            if (currentDimension == SPECTRAL_DIMENSION && fixedGameTime >= respawnEnergyTimeLimit) {
                 if (energy < respawnEnergyCost) {
                     // game over
                     gameIsOver++;
@@ -1192,7 +1203,7 @@ async function start() {
                     entities
                         .filter(entity => entity.b?.includes('s'))
                         .forEach(entity => {
-                            entity.nextCanShoot = Date.now() + 1000 + Math.random() * 1000;
+                            entity.nextCanShoot = fixedGameTime + 1000 + Math.random() * 1000;
                         });
 
                     // tutorial
@@ -1201,19 +1212,19 @@ async function start() {
             }
 
             // dimension change
-            if (currentDimension == BETWEEN_DIMENSION1 && Date.now() >= dimensionTransitionUntil) {
+            if (currentDimension == BETWEEN_DIMENSION1 && fixedGameTime >= dimensionTransitionUntil) {
                 // silence
                 currentDimension = BETWEEN_DIMENSION2;
-                dimensionTransitionUntil = Date.now() + DIMENSION_TRANSITION_LENGTH2;
+                dimensionTransitionUntil = fixedGameTime + DIMENSION_TRANSITION_LENGTH2;
                 player.dimension = currentDimension;
             }
-            else if (currentDimension == BETWEEN_DIMENSION2 && Date.now() >= dimensionTransitionUntil) {
+            else if (currentDimension == BETWEEN_DIMENSION2 && fixedGameTime >= dimensionTransitionUntil) {
                 currentDimension = BETWEEN_DIMENSION3;
-                dimensionTransitionUntil = Date.now() + DIMENSION_TRANSITION_LENGTH3;
+                dimensionTransitionUntil = fixedGameTime + DIMENSION_TRANSITION_LENGTH3;
                 player.dimension = currentDimension;
                 audio.play('enter_spectral');
             }
-            else if (currentDimension == BETWEEN_DIMENSION3 && Date.now() >= dimensionTransitionUntil) {
+            else if (currentDimension == BETWEEN_DIMENSION3 && fixedGameTime >= dimensionTransitionUntil) {
                 currentDimension = SPECTRAL_DIMENSION;
                 player.dimension = currentDimension;
             }
@@ -1234,8 +1245,8 @@ async function start() {
             // background fade-in-out
             if (currentDimension == SPECTRAL_DIMENSION || currentDimension == PHYSICAL_DIMENSION) {
                 dimensionAlpha = currentDimension;
-            } else if (currentDimension == BETWEEN_DIMENSION3 && dimensionTransitionUntil - Date.now() < DIMENSION_TRANSITION_LENGTH3) {
-                dimensionAlpha = 1 - (dimensionTransitionUntil - Date.now()) / DIMENSION_TRANSITION_LENGTH3 // Math.sign(currentDimension - dimensionAlpha) * 0.05;
+            } else if (currentDimension == BETWEEN_DIMENSION3 && dimensionTransitionUntil - fixedGameTime < DIMENSION_TRANSITION_LENGTH3) {
+                dimensionAlpha = 1 - (dimensionTransitionUntil - fixedGameTime) / DIMENSION_TRANSITION_LENGTH3 // Math.sign(currentDimension - dimensionAlpha) * 0.05;
             }
 
             // spectral background
@@ -1307,14 +1318,14 @@ async function start() {
 
             if (currentDimension == BETWEEN_DIMENSION1) {
                 // death? animation
-                let progress = 1 - (dimensionTransitionUntil - Date.now()) / DIMENSION_TRANSITION_LENGTH1;
+                let progress = 1 - (dimensionTransitionUntil - fixedGameTime) / DIMENSION_TRANSITION_LENGTH1;
                 progress *= progress;
                 const ww = player.image.width + 10000 * progress;
                 const hh = player.image.height * (1 - progress);
                 context.drawImage(player.image, player.x - ww / 2, player.y - hh / 2, ww, hh);
             } else if (currentDimension == BETWEEN_DIMENSION3) {
                 // death? animation
-                let progress = (dimensionTransitionUntil - Date.now()) / DIMENSION_TRANSITION_LENGTH3;
+                let progress = (dimensionTransitionUntil - fixedGameTime) / DIMENSION_TRANSITION_LENGTH3;
                 progress *= progress;
                 const ww = player.image.width + 10000 * progress;
                 const hh = player.image.height * (1 - progress);
@@ -1357,7 +1368,7 @@ async function start() {
 
             // context2.fillStyle = (currentDimension == SPECTRAL_DIMENSION ? colors.blue : colors.orange);
 
-            // if (energy < levelUpEnergyGoal || (Date.now() % 1000) > 500) context.globalAlpha = 0.5;
+            // if (energy < levelUpEnergyGoal || (fixedGameTime % 1000) > 500) context.globalAlpha = 0.5;
 
             // context2.fillRect(padding, _y, barWidth, 16);
 
@@ -1442,9 +1453,9 @@ async function start() {
                 context2.textAlign = 'center';
                 context2.fillStyle = colors.white;
 
-                if (currentDimension == SPECTRAL_DIMENSION && Date.now() < respawnEnergyTimeLimit) {
+                if (currentDimension == SPECTRAL_DIMENSION && respawnEnergyTimeLimit - fixedGameTime < 10 * 1000) {
                     context2.globalAlpha = 0.8;
-                    context2.fillText(((respawnEnergyTimeLimit - Date.now()) / 1000) | 0, canvas2.width / 2, canvas2.height / 2);
+                    context2.fillText(((respawnEnergyTimeLimit - fixedGameTime) / 1000) | 0, canvas2.width / 2, canvas2.height / 2);
                 }
                 if (tutProgress == 0) {
                     context2.font = '72px sans-serif';
@@ -1530,6 +1541,13 @@ async function start() {
                 context2.textAlign = 'center';
                 context2.fillText('Press <Enter> to restart', canvas2.width / 2, 500);
                 context2.fillText(`Collect ${energy}/${respawnEnergyCost} souls to respawn.`, canvas2.width / 2, 560);
+            }
+
+            if (gameIsPaused) {
+                context2.fillStyle = colors.white;
+                context2.textAlign = 'center';
+                context2.font = '16px sans-serif';
+                context2.fillText('Game Paused', canvas2.width / 2, 500);
             }
 
 
