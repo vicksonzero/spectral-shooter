@@ -1557,7 +1557,7 @@ async function start() {
                 context2.fillText(score, canvas2.width / 2, __y += 20); // Score
                 context2.font = '16px sans-serif'; // sm
                 __y += 20
-                context2.fillText(`${(fixedGameTime / 1000 / 60) | 0}m${(fixedGameTime / 1000 | 0) % 60}s (${spectralGameTime / 1000 | 0}s in spectral world)`, canvas2.width / 2, __y += 20); // Time
+                context2.fillText(`${(fixedGameTime / (1000 * 60)) | 0}m${(fixedGameTime / 1000 | 0) % 60}s (${spectralGameTime / 1000 | 0}s in spectral world)`, canvas2.width / 2, __y += 20); // Time
                 context2.fillText(`${highestCombo}x (${(highestComboTime / 100 | 0) / 10}s)`, canvas2.width / 2, __y += 20); // Highest combo
 
                 context2.fillText(
