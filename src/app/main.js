@@ -1584,7 +1584,8 @@ async function start() {
                 context2.textAlign = 'right';
                 context2.fillText('Score: ', canvas2.width / 2, _y += 20);
                 context2.textAlign = 'center';
-                context2.fillText('(Hi-Score: ' + highScore + ')', canvas2.width / 2, _y += 20);
+                if (score < highScore) context2.fillText(`(Hi-Score: ${highScore})`, canvas2.width / 2, _y += 20);
+                else context2.fillText(`(Hi-Score: ${highScore} → ${score})`, canvas2.width / 2, _y += 20);
                 context2.textAlign = 'right';
                 _y += 20
                 context2.fillText('Time: ', canvas2.width / 2, _y += 20);
