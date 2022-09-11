@@ -92,6 +92,7 @@ export class ArcadeAudio {
         var soundData = sound.length > 1 ? sound[(Math.random() * sound.length) | 0] : sound[0];
         soundData.pool[soundData.tick].volume = volume;
         soundData.pool[soundData.tick].play().catch(e => {/* do nothing */ });
-        soundData.tick < soundData.count - 1 ? soundData.tick++ : soundData.tick = 0;
+        // soundData.tick < soundData.count - 1 ? soundData.tick++ : soundData.tick = 0;
+        soundData.tick = (soundData.tick + 1) % soundData.count;
     }
 }

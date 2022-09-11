@@ -1626,7 +1626,7 @@ async function start() {
                 context2.fillStyle = ((Date.now() % 500) > 250 ? colors.orange : colors.white);
                 context2.textAlign = 'center';
                 context2.font = '16px sans-serif'; // sm
-                context2.fillText('Game Paused', canvas2.width / 2, 500);
+                context2.fillText('Game Paused', canvas2.width / 2, 480);
             }
 
 
