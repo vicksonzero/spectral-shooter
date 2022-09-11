@@ -163,7 +163,8 @@ Language
 - [ ] Add codenames like "Bringer of hell", "Deader get deader"
 - [x] Pause game
 - [x] Mute sound
-- [ ] Local high score
+- [x] Local high score
+- [ ] Explain story and scoring in-game
 
 ## Minimize
 
