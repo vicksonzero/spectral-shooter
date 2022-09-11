@@ -5,6 +5,7 @@ export async function loadImages() {
     return {
         basicEnemyPhysical: decompress(imageList.tile028, colors.darkGray),
         basicEnemySpectral: decompress(imageList.tile028, colors.gray),
+        basicEnemyOrange: decompress(imageList.tile028, colors.darkOrange),
 
         shooterEnemyPhysical: decompress(imageList.tile080, colors.darkGray),
         shooterEnemySpectral: decompress(imageList.tile080, colors.gray),

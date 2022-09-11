@@ -897,6 +897,10 @@ async function start() {
                         thisEntity.s = 0.5 * thisEntity.speed;
                         thisEntity.aiNextTick = fixedGameTime + 2000;
                     }
+
+                    if (thisEntity.eType == 0 && thisEntity.dimension == currentDimension && currentDimension == PHYSICAL_DIMENSION) { // basic enemy
+                        spawnSpriteEffect(1, thisEntity, Math.random() * 2 * Math.PI, 6, images.basicEnemyOrange, 10);
+                    }
                     // shoot enemy bullet
                     if (thisEntity.b?.includes('s') && currentDimension == thisEntity.dimension && distToPlayer < 250 && fixedGameTime >= thisEntity.nextCanShoot) {
                         /* #IfDev */
@@ -1335,6 +1339,18 @@ async function start() {
             ].forEach(([x, y]) => context.drawImage(images.floorTile1, x, y));
             context.globalAlpha = 1;
 
+            // player bg glow
+            const gradient2 = context.createRadialGradient(
+                player.x, player.y, 0,
+                player.x, player.y, 20);
+            gradient2.addColorStop(0, '#ffffff55');
+            gradient2.addColorStop(0.7, '#ffffff11');
+            gradient2.addColorStop(1, '#ffffff00');
+            context.beginPath();
+            context.arc(player.x, player.y, 100, 0, 2 * Math.PI);
+            context.fillStyle = gradient2;
+            context.fill();
+
             // render all entities
             [
                 effectsPool,
@@ -1386,10 +1402,10 @@ async function start() {
                 context.lineTo(xx + aimX * 100, yy + aimY * 100);
                 context.stroke();
 
-                context.beginPath();
-                context.moveTo(xx, yy);
-                context.lineTo(xx + Math.cos(player.frontRotation) * 16, yy + Math.sin(player.frontRotation) * 16);
-                context.stroke();
+                // context.beginPath();
+                // context.moveTo(xx, yy);
+                // context.lineTo(xx + Math.cos(player.frontRotation) * 16, yy + Math.sin(player.frontRotation) * 16);
+                // context.stroke();
                 context.restore();
             }
 

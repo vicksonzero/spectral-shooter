@@ -147,7 +147,7 @@ Language
   - [x] Upgrade box sprite
 - [x] vfx for spectral dash
 - [ ] vfx for blurring and glowing
-  - [ ] glowing melee enemy
+  - [x] glowing melee enemy
 - [x] vfx for enemy spawn
 
 
