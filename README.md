@@ -158,10 +158,12 @@ Language
 - [ ] Arena transition
 - [x] Fill the rest of the game with juice
 - [ ] Enemies
+  - [ ] spread shot enemies
 - [ ] Guns
 - [ ] Add codenames like "Bringer of hell", "Deader get deader"
-- [ ] Pause game
-- [ ] Mute sound
+- [x] Pause game
+- [x] Mute sound
+- [ ] Local high score
 
 ## Minimize
 

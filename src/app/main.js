@@ -99,6 +99,7 @@ async function start() {
     // let wave index = waveId;
     let countKills = [0, 0, 0];
     let countCompleteKills = [0, 0, 0];
+    let countUpgrades = 0;
 
 
 
@@ -575,13 +576,19 @@ async function start() {
                     }
 
                     audio.play('pickup');
+                    countUpgrades++;
                     energy = 0;
                     scoreMultiplierAck = scoreMultiplier / levelUpEnergyGoal | 0;
                     levelUpEnergyGoal = 5 + Math.pow(mainWeapon, 1.3) * 5 | 0;
                     console.log('levelUpEnergyGoal', levelUpEnergyGoal);
                     this.ttl = 0;
 
-                    entities.filter(e => e.box == 1).forEach(e => e.ttl = 0);
+                    entities.filter(e => e.box == 1 && e.ttl > 0).forEach(e => {
+                        const addScore = 100 * (scoreMultiplier / levelUpEnergyGoal | 0);
+                        score += addScore;
+                        spawnGraphicsEffect(3, e, -Math.PI / 2, 20, colors.white, '+' + addScore, 60);
+                        e.ttl = 0;
+                    });
                     spawnGraphicsEffect(3, this, -Math.PI / 2, 20, colors.white, mainWeaponNames[mainWeapon], 60);
                     spawnGraphicsEffect(1, this, 0, 500, colors.orange, 0, 60);
 
@@ -759,6 +766,8 @@ async function start() {
 
         // console.log("keyHandler", w, t);
 
+        // not using event.code because we have ascii magic going on
+
         // -4 bytes zipped compared to if-statements
         // ['WASD', 'ZQSD', '↑←↓→']
         const keyMap = {
@@ -772,13 +781,14 @@ async function start() {
             37: 'l', /* ← */
             68: 'r', /* D */
             39: 'r', /* → */
-            74: 'a', /* J */
-            75: 'a', /* K */
-            48: 'c1', /* 0 */ // cheat 1
+            // 74: 'a', /* J */
+            // 75: 'a', /* K */
+            // 48: 'c1', /* 0 */ // cheat 1
             32: 's', /* space */
             8: 'b', /* backspace */
             13: 'en', /* enter */
             9: 'tb', /* tab */
+            77: 'm', /* m */
         };
 
         if (!keyMap[w]) return;
@@ -786,12 +796,16 @@ async function start() {
         input[keyMap[w]] = +(t[3] < 'u');
 
         // toggles quick hack
-        if (input.c1 && 'c1' == keyMap[w]) {
-            input.c1 = 0;
-        }
-        if (input.s && 's' == keyMap[w]) {
-            audio.play('test');
-            input.s = 0;
+        // if (input.c1 && 'c1' == keyMap[w]) {
+        //     input.c1 = 0;
+        // }
+        // if (input.s && 's' == keyMap[w]) {
+        //     audio.play('test');
+        //     input.s = 0;
+        // }
+        if (input.m && 'm' == keyMap[w]) {
+            audio.volume = !audio.volume;
+            input.m = 0;
         }
         if (input.en && 'en' == keyMap[w] && gameIsOver) {
             restart();
@@ -1434,12 +1448,12 @@ async function start() {
                 context2.fillText('Heat:', 64 - 40, 64 + 20 + 10);
                 context2.textAlign = 'center';
                 // context2.font = '28px sans-serif'; // md
-                context2.fillText((scoreMultiplier / levelUpEnergyGoal | 0) + 'x', 64 + 52, 64 + 20 + 10);
+                context2.fillText((scoreMultiplier / levelUpEnergyGoal | 0) + 'x', 64 + 52 - 18, 64 + 20 + 10);
 
                 context2.strokeStyle = colors.white;
                 context2.lineWidth = 4;
                 context2.beginPath();
-                context2.arc(64 + 52, 64 + 24, 24, Math.PI, Math.PI + (scoreMultiplier % levelUpEnergyGoal) / levelUpEnergyGoal * 2 * Math.PI);
+                context2.arc(64 + 52 - 18, 64 + 24, 24, Math.PI, Math.PI + (scoreMultiplier % levelUpEnergyGoal) / levelUpEnergyGoal * 2 * Math.PI);
                 context2.stroke();
             }
 
@@ -1521,6 +1535,11 @@ async function start() {
                     context2.fillText(`Respawning shortly...`, canvas2.width / 2, 100);
                 }
 
+                // pause
+                context2.textAlign = 'right';
+                context2.fillText(`Press <Tab> to pause`, 936, 604 - 20);
+                if (audio.volume) context2.fillText(`Press <M> to Mute`, 936, 604);
+                else context2.fillText(`Press <M> to Unmute`, 936, 604);
             }
 
             if (gameIsOver) {
@@ -1550,6 +1569,7 @@ async function start() {
                 context2.fillText('Highest heat: ', canvas2.width / 2, _y += 20);
                 context2.fillText('Kills: ', canvas2.width / 2, _y += 20);
                 context2.fillText('Souls collected: ', canvas2.width / 2, _y += 20);
+                context2.fillText('Upgrades collected: ', canvas2.width / 2, _y += 20);
 
 
                 context2.textAlign = 'left';
@@ -1570,15 +1590,17 @@ async function start() {
                     canvas2.width / 2,
                     __y += 20
                 ); // Souls collected
+                context2.fillText(countUpgrades, canvas2.width / 2, __y += 20); // Upgrades collected
 
 
                 context2.textAlign = 'center';
-                context2.fillText('Press <Enter> to restart', canvas2.width / 2, 500);
                 context2.fillText(`Collect ${energy}/${respawnEnergyCost} souls to respawn.`, canvas2.width / 2, 560);
+                context2.fillStyle = ((Date.now() % 500) > 250 ? colors.orange : colors.white);
+                context2.fillText('Press <Enter> to restart', canvas2.width / 2, 500);
             }
 
             if (gameIsPaused) {
-                context2.fillStyle = colors.white;
+                context2.fillStyle = ((Date.now() % 500) > 250 ? colors.orange : colors.white);
                 context2.textAlign = 'center';
                 context2.font = '16px sans-serif'; // sm
                 context2.fillText('Game Paused', canvas2.width / 2, 500);
