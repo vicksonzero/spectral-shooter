@@ -73,6 +73,7 @@ async function start() {
     let dimensionTransitionUntil = 0;
     let dimensionAlpha = 0; // 0=physical, 1=spectral
 
+    let highScore = parseInt(localStorage.getItem('dicksonmd.spectralShooter.hiScore') ?? 0);
     let score = 0;
     let scoreMultiplier = 10;
     let scoreMultiplierAck = 1;
@@ -1216,6 +1217,8 @@ async function start() {
                     // game over
                     gameIsOver++;
 
+                    localStorage.setItem('md.dickson.spectralShooter.hiScore', score);
+
                     audio.play('game_over');
                 } else {
                     // respawn
@@ -1580,6 +1583,9 @@ async function start() {
                 context2.font = '16px sans-serif'; // sm
                 context2.textAlign = 'right';
                 context2.fillText('Score: ', canvas2.width / 2, _y += 20);
+                context2.textAlign = 'center';
+                context2.fillText('(Hi-Score: ' + highScore + ')', canvas2.width / 2, _y += 20);
+                context2.textAlign = 'right';
                 _y += 20
                 context2.fillText('Time: ', canvas2.width / 2, _y += 20);
                 context2.fillText('Highest heat: ', canvas2.width / 2, _y += 20);
@@ -1592,6 +1598,7 @@ async function start() {
                 context2.font = '28px sans-serif'; // md
                 context2.fillText(score, canvas2.width / 2, __y += 20); // Score
                 context2.font = '16px sans-serif'; // sm
+                __y += 20
                 __y += 20
                 context2.fillText(`${(fixedGameTime / (1000 * 60)) | 0}m${(fixedGameTime / 1000 | 0) % 60}s (${spectralGameTime / 1000 | 0}s in spectral world)`, canvas2.width / 2, __y += 20); // Time
                 context2.fillText(`${highestHeat}x (${(highestHeatTime / 100 | 0) / 10}s)`, canvas2.width / 2, __y += 20); // Highest heat
