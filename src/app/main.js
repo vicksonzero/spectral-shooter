@@ -104,6 +104,7 @@ async function start() {
     let countKills = [0, 0, 0];
     let countCompleteKills = [0, 0, 0];
     let countUpgrades = 0;
+    let countMisses = 0;
 
 
 
@@ -752,6 +753,7 @@ async function start() {
 
             audio.play('death');
 
+            countMisses++;
             if (tutDeath == 0) {
                 tutDeath = 1;
                 tutIsShown = 1;
@@ -1024,6 +1026,7 @@ async function start() {
 
                     audio.play('death');
 
+                    countMisses++;
                     if (tutDeath == 0) {
                         tutDeath = 1;
                         tutIsShown = 1;
@@ -1262,7 +1265,7 @@ async function start() {
                     // game over
                     gameIsOver++;
 
-                    localStorage.setItem('md.dickson.spectralShooter.hiScore', score);
+                    if (score > highScore) localStorage.setItem('dicksonmd.spectralShooter.hiScore', score);
 
                     audio.play('game_over');
                 } else {
@@ -1653,23 +1656,24 @@ async function start() {
                 context2.font = '16px sans-serif'; // sm
                 context2.textAlign = 'right';
                 context2.fillText('Score: ', canvas2.width / 2, _y += 20);
-                context2.textAlign = 'center';
-                if (score < highScore) context2.fillText(`(Hi-Score: ${highScore})`, canvas2.width / 2, _y += 20);
-                else context2.fillText(`(Hi-Score: ${highScore} → ${score})`, canvas2.width / 2, _y += 20);
-                context2.textAlign = 'right';
+                context2.fillText('Hi-Score: ', canvas2.width / 2, _y += 20);
                 _y += 20
                 context2.fillText('Time: ', canvas2.width / 2, _y += 20);
                 context2.fillText('Highest heat: ', canvas2.width / 2, _y += 20);
                 context2.fillText('Kills: ', canvas2.width / 2, _y += 20);
                 context2.fillText('Souls collected: ', canvas2.width / 2, _y += 20);
                 context2.fillText('Upgrades collected: ', canvas2.width / 2, _y += 20);
+                context2.fillText('Misses: ', canvas2.width / 2, _y += 20);
 
 
                 context2.textAlign = 'left';
                 context2.font = '28px sans-serif'; // md
                 context2.fillText(score, canvas2.width / 2, __y += 20); // Score
                 context2.font = '16px sans-serif'; // sm
-                __y += 20
+
+                // Hi-Score
+                if (score < highScore) context2.fillText(highScore, canvas2.width / 2, __y += 20);
+                else context2.fillText(`${highScore} → ${score}`, canvas2.width / 2, __y += 20);
                 __y += 20
                 context2.fillText(`${(fixedGameTime / (1000 * 60)) | 0}m${(fixedGameTime / 1000 | 0) % 60}s (${spectralGameTime / 1000 | 0}s in spectral world)`, canvas2.width / 2, __y += 20); // Time
                 context2.fillText(`${highestHeat}x (${(highestHeatTime / 100 | 0) / 10}s)`, canvas2.width / 2, __y += 20); // Highest heat
@@ -1685,6 +1689,7 @@ async function start() {
                     __y += 20
                 ); // Souls collected
                 context2.fillText(countUpgrades, canvas2.width / 2, __y += 20); // Upgrades collected
+                context2.fillText(countMisses, canvas2.width / 2, __y += 20); // Misses
 
 
                 context2.textAlign = 'center';
