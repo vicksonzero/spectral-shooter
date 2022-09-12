@@ -68,6 +68,7 @@ async function start() {
 
     let gameIsOver = 0;
     let gameIsPaused = 0;
+    let tutIsShown = 1;
 
     let currentDimension = 0; // 0=physical, 1=spectral
     let dimensionTransitionUntil = 0;
@@ -86,10 +87,12 @@ async function start() {
     let nextSpawnTick = -1;
     let enemyCount = 0;
 
-    let mainWeapon = MAIN_NONE; // MAIN_NONE;
+    let mainWeapon = MAIN_DUAL_PISTOL; // MAIN_NONE;
     let mainWeaponLv = 1; // 1,2,3;
     let gunSide = 1; // 0, 1
     let tutProgress = 0;
+    let tutDeath = 0;
+    let tutUpgrade = 0;
 
 
 
@@ -141,9 +144,9 @@ async function start() {
     const waves = [
         // [waveTime (sec), spawnInterval (ms), maxEnemyCount, spawnCount, ...list],
         [10 /*15*/, 2000, 5, 3, spawnBasicEnemy],
-        [2 /*15*/, 2000, 10, 3],
-        [30, 3000, 30, 3, spawnBasicEnemy, spawnBasicEnemy, spawnShooterEnemy],
-        [20, 3000, 40, 3, spawnBasicEnemy, spawnShooterEnemy],
+        [30, 3000, 20, 3, spawnBasicEnemy, spawnBasicEnemy, spawnShooterEnemy],
+        [20, 3000, 25, 3, spawnBasicEnemy, spawnShooterEnemy],
+        [20, 3000, 30, 3, spawnBasicEnemy, spawnShooterEnemy],
         [20, 3000, 50, 3, spawnBasicEnemy, spawnShooterEnemy],
         [30, 3000, 30, 5, spawnBasicEnemy, spawnShooterEnemy, spawnShooterEnemy, spawnFatEnemy],
         [30, 2000, 100, 3, spawnBasicEnemy, spawnShooterEnemy, spawnShooterEnemy, spawnShooterEnemy, spawnFatEnemy, spawnFatEnemy],
@@ -253,7 +256,7 @@ async function start() {
             onDeathSpawn() { spawnGhostFire.call(this, randomUnitVector(), spawnBasicEnemy); },
             targetX: this.x,
             targetY: this.y,
-            speed: 1,
+            speed: 0.7,
             aiNextTick: fixedGameTime,
             hitEffectUntil: fixedGameTime,
             team: TEAM_ENEMY,
@@ -306,7 +309,7 @@ async function start() {
             onDeathSpawn() { spawnGhostFire.call(this, randomUnitVector(), spawnBasicEnemy); },
             targetX: this.x,
             targetY: this.y,
-            speed: 0.65,
+            speed: 0.5,
             aiNextTick: fixedGameTime,
             hitEffectUntil: fixedGameTime,
             team: TEAM_ENEMY,
@@ -567,12 +570,7 @@ async function start() {
                     // console.log('player collect box');
 
                     if (this.mainWeapon) { // not zero
-                        if (mainWeapon == MAIN_NONE) {
-                            nextWaveTime = fixedGameTime + waves[waveID][0] * 1000;
-                            tutProgress = 1;
-                        }
                         mainWeapon = this.mainWeapon;
-                        nextSpawnTick = fixedGameTime + 500;
                         // console.log(mainWeapon);
                     }
 
@@ -604,6 +602,11 @@ async function start() {
                             entity.knockDx = (entity.x - player.x) / player.position.distance(entity) * 12;
                             entity.knockDy = (entity.y - player.y) / player.position.distance(entity) * 12;
                         });
+
+                    if (tutUpgrade == 0) {
+                        tutUpgrade = 1;
+                        tutIsShown = 1;
+                    }
                 }
             },
             render() {
@@ -745,11 +748,16 @@ async function start() {
             entities.filter(e => e.box == 1).forEach(e => e.ttl = 0);
 
             audio.play('death');
+
+            if (tutDeath == 0) {
+                tutDeath = 1;
+                tutIsShown = 1;
+            }
         }
     }
 
     // spawnBox(canvas.width / 2, canvas.height / 2, MAIN_SHOTGUN); // testing
-    spawnBox(canvas.width / 2, canvas.height / 2, MAIN_DUAL_PISTOL);
+    // spawnBox(canvas.width / 2, canvas.height / 2, MAIN_DUAL_PISTOL);
 
     // Inputs (see https://xem.github.io/articles/jsgamesinputs.html)
     const input = {
@@ -808,9 +816,25 @@ async function start() {
             audio.volume = !audio.volume;
             input.m = 0;
         }
-        if (input.en && 'en' == keyMap[w] && gameIsOver) {
-            restart();
-            input.en = 0;
+        if (input.s && 's' == keyMap[w]) {
+            if (gameIsOver) {
+                restart();
+            }
+            if (tutIsShown) {
+                tutIsShown = false;
+            }
+            if (tutProgress == 0) {
+                tutProgress++;
+                tutIsShown = true;
+            } else if (tutProgress == 1) {
+                tutProgress++;
+                tutIsShown = true;
+            } else if (tutProgress == 2) {
+                tutProgress++;
+                nextSpawnTick = fixedGameTime + 500;
+                nextWaveTime = fixedGameTime + waves[waveID][0] * 1000;
+            }
+            input.s = 0;
         }
         if (input.tb && 'tb' == keyMap[w] && !gameIsOver) {
             gameIsPaused = !gameIsPaused;
@@ -828,6 +852,7 @@ async function start() {
         update() { // update the game state
             if (gameIsOver) return;
             if (gameIsPaused) return;
+            if (tutIsShown) return;
             fixedGameTime += fixedDeltaTime;
             if (currentDimension == SPECTRAL_DIMENSION) spectralGameTime += fixedDeltaTime;
 
@@ -968,19 +993,6 @@ async function start() {
                 ));
 
                 const enemyCollideWithPlayer = collisions.some(entity => entity == player);
-                // if spectral enemy collides spectral player
-                if (enemyCollideWithPlayer && currentDimension == SPECTRAL_DIMENSION && thisEntity.returnHp) {
-                    // eat ghostFire
-                    audio.play('coin');
-                    energy++;
-                    enemyCount--;
-                    thisEntity.ttl = 0;
-                    countCompleteKills[thisEntity.eType]++;
-
-
-                    spawnGraphicsEffect(3, thisEntity, -Math.PI / 2, 20, colors.white, energy + '/' + respawnEnergyCost, 60);
-                    // add to resurrection energy
-                }
 
                 // if physical enemy collides physical player
                 if (enemyCollideWithPlayer && currentDimension == PHYSICAL_DIMENSION && thisEntity.dimension == PHYSICAL_DIMENSION) {
@@ -1002,6 +1014,11 @@ async function start() {
                     entities.filter(e => e.box == 1).forEach(e => e.ttl = 0);
 
                     audio.play('death');
+
+                    if (tutDeath == 0) {
+                        tutDeath = 1;
+                        tutIsShown = 1;
+                    }
                 }
 
                 // if physical enemy collides spectral player
@@ -1019,8 +1036,8 @@ async function start() {
                     }
                     // knockback player
 
-                    player.knockDx = Math.cos(player.frontRotation + Math.PI) * 12;
-                    player.knockDy = Math.sin(player.frontRotation + Math.PI) * 12;
+                    player.knockDx = (player.x - thisEntity.x) / player.position.distance(thisEntity) * 12;
+                    player.knockDy = (player.y - thisEntity.y) / player.position.distance(thisEntity) * 12;
 
 
                     // // snap knockback to 1 dimension
@@ -1045,6 +1062,23 @@ async function start() {
                         thisEntity.y += (thisEntity.y - closest.y) / dist * 0.2;
                     }
                 }
+
+
+                // if spectral enemy collides spectral player
+                if (currentDimension == SPECTRAL_DIMENSION && thisEntity.returnHp && player.position.distance(thisEntity) < 20) {
+                    // eat ghostFire
+                    audio.play('coin');
+                    energy++;
+                    enemyCount--;
+                    thisEntity.ttl = 0;
+                    countCompleteKills[thisEntity.eType]++;
+
+
+                    spawnGraphicsEffect(3, thisEntity, -Math.PI / 2, 20, colors.white, energy + '/' + respawnEnergyCost, 60);
+                    // add to resurrection energy
+                }
+
+
                 if (thisEntity.x - thisEntity.width / 2 < 0) thisEntity.x = thisEntity.width / 2;
                 if (thisEntity.x + thisEntity.width / 2 > canvas.width) thisEntity.x = canvas.width - thisEntity.width / 2;
                 if (thisEntity.y - thisEntity.height / 2 < 0) thisEntity.y = thisEntity.height / 2;
@@ -1062,22 +1096,24 @@ async function start() {
                 if (currentDimension == SPECTRAL_DIMENSION) {
 
                     // dash towards mouse position
-                    if (pointerPressed('left')) {
-                        player.frontRotation = lerpRadians(player.frontRotation, pointerDirection, 1);
-                    } else {
+                    // if (pointerPressed('left')) {
+                    //     player.frontRotation = lerpRadians(player.frontRotation, pointerDirection, 1);
+                    // } else {
 
-                        const keyboardRotation = Math.atan2(
-                            input.u ? -1 : input.d ? +1 : 0,
-                            input.l ? -1 : input.r ? +1 : 0
-                        );
-                        if (input.u || input.d || input.l || input.r) {
-                            player.frontRotation = lerpRadians(player.frontRotation, keyboardRotation, 1);
-                        }
-                    }
+                    //     const keyboardRotation = Math.atan2(
+                    //         input.u ? -1 : input.d ? +1 : 0,
+                    //         input.l ? -1 : input.r ? +1 : 0
+                    //     );
+                    //     if (input.u || input.d || input.l || input.r) {
+                    //         player.frontRotation = lerpRadians(player.frontRotation, keyboardRotation, 1);
+                    //     }
+                    // }
 
-                    player.dx = Math.cos(player.frontRotation) * Math.min(player.position.distance(pointer), player.speed * 2);
-                    player.dy = Math.sin(player.frontRotation) * Math.min(player.position.distance(pointer), player.speed * 2);
+                    // player.dx = Math.cos(player.frontRotation) * Math.min(player.position.distance(pointer), player.speed * 2);
+                    // player.dy = Math.sin(player.frontRotation) * Math.min(player.position.distance(pointer), player.speed * 2);
 
+                    player.dy *= 2;
+                    player.dx *= 2;
 
 
                     // if (player.position.distance(pointer) < player.speed * 2) {
@@ -1227,7 +1263,7 @@ async function start() {
                         // add 1 to multiplier
                         scoreMultiplier += levelUpEnergyGoal;
 
-                        spawnGraphicsEffect(3, player, -Math.PI / 2, 20, colors.white, `Souls bonus (${respawnEnergyCost * 2}+)`, 60);
+                        spawnGraphicsEffect(3, player, -Math.PI / 2, 20, colors.white, `Souls bonus (Heat +1)`, 60);
                     }
 
                     currentDimension = PHYSICAL_DIMENSION;
@@ -1252,8 +1288,6 @@ async function start() {
                             entity.nextCanShoot = fixedGameTime + 1000 + Math.random() * 1000;
                         });
 
-                    // tutorial
-                    if (tutProgress == 1) tutProgress++;
                 }
             }
 
@@ -1304,43 +1338,49 @@ async function start() {
                 context.fillRect(0, 0, canvas.width, canvas.height);
                 // context.globalAlpha = 1;
             }
-            // render some tiles
-            context.globalAlpha = 0.4;
-            ;[
-                [16 * 5, 16 * 6],
-                [16 * 5, 16 * 7],
-                [16 * 6, 16 * 7],
-                [16 * 7, 16 * 7],
-                [16 * 6, 16 * 8],
+            if (tutProgress < 3) {
+                context.fillStyle = gradient;
+                context.globalAlpha = 1;
+                context.fillRect(0, 0, canvas.width, canvas.height);
+            } else {
+                // render some tiles
+                context.globalAlpha = 0.4;
+                ;[
+                    [16 * 5, 16 * 6],
+                    [16 * 5, 16 * 7],
+                    [16 * 6, 16 * 7],
+                    [16 * 7, 16 * 7],
+                    [16 * 6, 16 * 8],
 
-                [16 * 15, 16 * 3],
+                    [16 * 15, 16 * 3],
 
-                [16 * 17, 16 * 9],
-                [16 * 18, 16 * 9],
-                [16 * 19, 16 * 9],
-                [16 * 18, 16 * 10],
-                [16 * 19, 16 * 10],
-                [16 * 20, 16 * 10],
+                    [16 * 17, 16 * 9],
+                    [16 * 18, 16 * 9],
+                    [16 * 19, 16 * 9],
+                    [16 * 18, 16 * 10],
+                    [16 * 19, 16 * 10],
+                    [16 * 20, 16 * 10],
 
-                [16 * 25, 16 * 2],
-                [16 * 25, 16 * 3],
-                [16 * 25, 16 * 4],
-                [16 * 25, 16 * 5],
-                [16 * 25, 16 * 6],
-                [16 * 26, 16 * 3],
-                [16 * 26, 16 * 4],
-                [16 * 26, 16 * 5],
-                [16 * 26, 16 * 6],
-                [16 * 26, 16 * 7],
+                    [16 * 25, 16 * 2],
+                    [16 * 25, 16 * 3],
+                    [16 * 25, 16 * 4],
+                    [16 * 25, 16 * 5],
+                    [16 * 25, 16 * 6],
+                    [16 * 26, 16 * 3],
+                    [16 * 26, 16 * 4],
+                    [16 * 26, 16 * 5],
+                    [16 * 26, 16 * 6],
+                    [16 * 26, 16 * 7],
 
-                [16 * 10, 16 * 13],
-                [16 * 11, 16 * 13],
-                [16 * 12, 16 * 13],
-                [16 * 13, 16 * 14],
-                [16 * 13, 16 * 15],
-                [16 * 14, 16 * 14],
-            ].forEach(([x, y]) => context.drawImage(images.floorTile1, x, y));
-            context.globalAlpha = 1;
+                    [16 * 10, 16 * 13],
+                    [16 * 11, 16 * 13],
+                    [16 * 12, 16 * 13],
+                    [16 * 13, 16 * 14],
+                    [16 * 13, 16 * 15],
+                    [16 * 14, 16 * 14],
+                ].forEach(([x, y]) => context.drawImage(images.floorTile1, x, y));
+                context.globalAlpha = 1;
+            }
 
             // player bg glow
             const gradient2 = context.createRadialGradient(
@@ -1412,98 +1452,60 @@ async function start() {
                 context.restore();
             }
 
-            // energy bar
-
-            // const padding = 40;
-            // const _y = 280 * 2;
-            // const barWidth = (canvas2.width - padding - padding) * Math.min(1, energy / levelUpEnergyGoal);
-            // const respawnEnergyGoalX = (padding + (canvas2.width - padding - padding) * respawnEnergyGoal / levelUpEnergyGoal) | 0;
-            // const levelUpEnergyGoalX = (padding + (canvas2.width - padding - padding)) | 0;
-
-            // context2.globalAlpha = 0.7;
-            // context2.fillStyle = colors.darkGray;
-            // context2.fillRect(padding + barWidth, _y + 4, canvas2.width - padding - padding - barWidth, 8);
-
-            // context2.fillStyle = (currentDimension == SPECTRAL_DIMENSION ? colors.blue : colors.orange);
-
-            // if (energy < levelUpEnergyGoal || (fixedGameTime % 1000) > 500) context.globalAlpha = 0.5;
-
-            // context2.fillRect(padding, _y, barWidth, 16);
 
 
-            // context2.strokeStyle = currentDimension ? colors.blue : colors.orange;
-            // context2.lineWidth = 1;
-
-            // context2.beginPath();
-            // context2.moveTo(respawnEnergyGoalX, _y - 8);
-            // context2.lineTo(respawnEnergyGoalX, _y + 16 + 8);
-            // context2.stroke();
-
-            // context2.beginPath();
-            // context2.moveTo(levelUpEnergyGoalX, _y - 8);
-            // context2.lineTo(levelUpEnergyGoalX, _y + 16 + 8);
-            // context2.stroke();
-
-            // context2.globalAlpha = 1;
-
-            // context2.font = '16px sans-serif'; // sm
-            // context2.fillStyle = colors.white;
-            // context2.textAlign = 'right';
-            // context2.fillText(currentDimension == SPECTRAL_DIMENSION ? 'Respawn' : '1-up', respawnEnergyGoalX - 4, _y + 40);
-            // context2.fillText(currentDimension == SPECTRAL_DIMENSION ? 'Bonus' : 'Level up', levelUpEnergyGoalX - 4, _y + 40);
-
-
-            // score
-            context2.textAlign = 'left';
-            context2.fillStyle = colors.white;
-            context2.font = '16px sans-serif'; // sm
-            context2.fillText('Score:', 64 - 40, 64 - 20);
-            context2.font = '28px sans-serif'; // md
-            context2.fillText(score, 64 - 40 + 48, 64 - 20);
-
-            // Heat
-            if (scoreMultiplier > 10) {
+            if (tutProgress >= 3) {
+                // score
+                context2.textAlign = 'left';
+                context2.fillStyle = colors.white;
                 context2.font = '16px sans-serif'; // sm
-                context2.fillText('Heat:', 64 - 40, 64 + 20 + 10);
-                context2.textAlign = 'center';
-                // context2.font = '28px sans-serif'; // md
-                context2.fillText((scoreMultiplier / levelUpEnergyGoal | 0) + 'x', 64 + 52 - 18, 64 + 20 + 10);
+                context2.fillText('Score:', 64 - 40, 64 - 20);
+                context2.font = '28px sans-serif'; // md
+                context2.fillText(score, 64 - 40 + 48, 64 - 20);
 
-                context2.strokeStyle = colors.white;
-                context2.lineWidth = 4;
+                // Heat
+                if (scoreMultiplier > 10) {
+                    context2.font = '16px sans-serif'; // sm
+                    context2.fillText('Heat:', 64 - 40, 64 + 20 + 10);
+                    context2.textAlign = 'center';
+                    // context2.font = '28px sans-serif'; // md
+                    context2.fillText((scoreMultiplier / levelUpEnergyGoal | 0) + 'x', 64 + 52 - 18, 64 + 20 + 10);
+
+                    context2.strokeStyle = colors.white;
+                    context2.lineWidth = 4;
+                    context2.beginPath();
+                    context2.arc(64 + 52 - 18, 64 + 24, 24, Math.PI, Math.PI + (scoreMultiplier % levelUpEnergyGoal) / levelUpEnergyGoal * 2 * Math.PI);
+                    context2.stroke();
+                }
+
+                // Revive cost
+                const hasEnoughGhostFire = (entities.filter(e => e.returnHp != null).length >= (respawnEnergyCost - energy));
+                context2.textAlign = 'right';
+                context2.fillStyle = colors.white;
+                context2.font = '16px sans-serif'; // sm
+                context2.fillText('Collectable souls:', canvas2.width - 24 - 56, 64 - 20);
+                context2.fillStyle = !hasEnoughGhostFire ? colors.orange : colors.white;
+                context2.font = '28px sans-serif'; // md
+                context2.fillText(entities.filter(e => e.returnHp != null).length, canvas2.width - 24, 64 - 20);
+                context2.fillStyle = colors.white;
+
+                // main weapon
                 context2.beginPath();
-                context2.arc(64 + 52 - 18, 64 + 24, 24, Math.PI, Math.PI + (scoreMultiplier % levelUpEnergyGoal) / levelUpEnergyGoal * 2 * Math.PI);
-                context2.stroke();
+                context2.arc(64 - 40 + 20, canvas2.height - 64 + 20, 20, 0, 2 * Math.PI);
+                context2.fill();
+                if (mainWeaponImages[mainWeapon]) {
+                    context2.drawImage(
+                        mainWeaponImages[mainWeapon],
+                        64 - 40 + 4,
+                        canvas2.height - 64 + 4,
+                        32,
+                        32
+                    );
+                }
+                context2.font = '16px sans-serif'; // sm
+                context2.textAlign = 'left';
+                context2.fillText(mainWeaponNames[mainWeapon], 64 - 40 + 48, canvas2.height - 64 + 20 + 8);
             }
-
-            // Revive cost
-            const hasEnoughGhostFire = (entities.filter(e => e.returnHp != null).length >= (respawnEnergyCost - energy));
-            context2.textAlign = 'left';
-            context2.fillStyle = colors.white;
-            context2.font = '16px sans-serif'; // sm
-            context2.fillText('Revive cost:', canvas2.width - 64 - 48 - 48, 64 - 20);
-            context2.font = '28px sans-serif'; // md
-            context2.fillStyle = !hasEnoughGhostFire ? colors.orange : colors.white;
-            context2.fillText(respawnEnergyCost + (!hasEnoughGhostFire ? '!!' : ''), canvas2.width - 64 - 48 + 48, 64 - 20);
-            context2.fillStyle = colors.white;
-
-            // main weapon
-            context2.beginPath();
-            context2.arc(64 - 40 + 20, canvas2.height - 64 + 20, 20, 0, 2 * Math.PI);
-            context2.fill();
-            if (mainWeaponImages[mainWeapon]) {
-                context2.drawImage(
-                    mainWeaponImages[mainWeapon],
-                    64 - 40 + 4,
-                    canvas2.height - 64 + 4,
-                    32,
-                    32
-                );
-            }
-            context2.font = '16px sans-serif'; // sm
-            context2.textAlign = 'left';
-            context2.fillText(mainWeaponNames[mainWeapon], 64 - 40 + 48, canvas2.height - 64 + 20 + 8);
-
 
             if (!gameIsOver) {
                 // titles
@@ -1517,41 +1519,98 @@ async function start() {
                 }
                 if (tutProgress == 0) {
                     context2.font = '72px sans-serif'; // lg
-                    context2.fillText('Spectral-Shooter', canvas2.width / 2, canvas2.height / 2 - 120);
+                    context2.fillText('Spectral-Shooter', canvas2.width / 2, canvas2.height / 2 - 80);
+
+                    // style for tutorial text
+                    context2.font = '16px sans-serif'; // sm
+                    context2.textAlign = 'center';
+                    context2.fillStyle = colors.white;
+                    context2.globalAlpha = 1;
+                    context2.fillText('A js13k game By Dickson', canvas2.width / 2, canvas2.height / 2 - 40);
+
+                    context2.fillText('Press <Space> to start game', canvas2.width / 2, 500);
                 }
 
-                // style for tutorial text
                 context2.font = '16px sans-serif'; // sm
                 context2.textAlign = 'center';
                 context2.fillStyle = colors.white;
                 context2.globalAlpha = 1;
 
-                // tutorial
-                if (tutProgress == 0) {
-                    context2.fillText('A js13k game By Dickson', canvas2.width / 2, canvas2.height / 2 - 80);
-                    context2.fillText('Use WASD, ZQSD, or ← ↓ ↑ → to move.', canvas2.width / 2, 520);
-                    context2.fillText('Collect power-up to start game.', canvas2.width / 2, 560);
+
+                if (tutProgress == 1 && tutIsShown) {
+                    let y = 200;
+                    context2.fillText('Undeads don\'t actually die. ', canvas2.width / 2, y += 20);
+                    context2.fillText('They go into the spectral world, and respawn after some time.', canvas2.width / 2, y += 20);
+                    y += 20
+                    context2.fillText('You are an undead hunter, gifted with the ability to move ', canvas2.width / 2, y += 20);
+                    context2.fillText('between the physical world, and the spectral world.', canvas2.width / 2, y += 20);
+                    y += 20
+                    y += 20
+                    context2.fillText('Dive into the spectral world to kill them for good.', canvas2.width / 2, y += 20);
+
+                    context2.fillText('Press <Space> to proceed', canvas2.width / 2, 500);
                 }
-                // if (tutProgress == 1) context2.fillText('Point mouse at ghost fire', canvas2.width / 2, 520);
-                else if (tutProgress == 2 && score < 100 && currentDimension == PHYSICAL_DIMENSION) {
-                    context2.fillText('Use mouse to aim, left click to shoot,', canvas2.width / 2, 60);
-                    context2.fillText('Avoid physical enemies.', canvas2.width / 2, 100);
+                if (tutProgress == 2 && tutIsShown) {
+                    let y = 260;
+                    context2.fillText('If you ever find yourself dead, ', canvas2.width / 2, y += 20);
+                    context2.fillText('just collect some souls from the spectral world to revive.', canvas2.width / 2, y += 20);
+
+                    context2.fillText('Press <Space> to proceed', canvas2.width / 2, 500);
                 }
-                else if (tutProgress == 2 && score < 300 && currentDimension == PHYSICAL_DIMENSION) {
-                    context2.fillText(`Monsters can respawn from the dead, but so can you.`, canvas2.width / 2, 60);
-                    context2.fillText(`Collect an upgrade to start Spectral Dash!`, canvas2.width / 2, 100);
+                if (tutProgress == 3 && score < 50 && currentDimension == PHYSICAL_DIMENSION) {
+                    let y = 460;
+                    context2.fillText('Move around using WASD, ZQSD, or ← ↓ ↑ →', canvas2.width / 2, y += 40);
+                    context2.fillText('Aim with mouse and shoot by holding left click.', canvas2.width / 2, y += 40);
                 }
+                else if (tutProgress == 3 && !tutUpgrade && score < 250 && currentDimension == PHYSICAL_DIMENSION) {
+                    let y = 460;
+                    context2.fillText('Monsters can revive from the dead, but so can you.', canvas2.width / 2, y += 40);
+                    context2.fillText('Collect an upgrade to enter the spectral world without dying!', canvas2.width / 2, y += 40);
+                }
+
 
 
                 if (currentDimension == SPECTRAL_DIMENSION && respawnEnergyCost > energy) {
-                    if (tutProgress == 1) {
-                        // context2.fillText(`Point mouse at ghost fire,`, canvas2.width / 2, 60);
-                        context2.fillText(`Use keyboard or click to move in spectral form,`, canvas2.width / 2, 100);
-                    }
-                    context2.fillText(`Collect ${energy}/${respawnEnergyCost} souls to respawn.`, canvas2.width / 2, 60);
+                    context2.fillText(`Collect ${energy}/${respawnEnergyCost} souls to revive.`, canvas2.width / 2, 360);
 
                 } else if (currentDimension == SPECTRAL_DIMENSION) {
-                    context2.fillText(`Respawning shortly...`, canvas2.width / 2, 100);
+                    context2.fillText(`Reviving shortly...`, canvas2.width / 2, 360);
+                }
+
+                // tut popups
+                if (tutDeath && tutIsShown) {
+                    context2.globalAlpha = 0.8;
+                    context2.fillStyle = colors.black;
+                    context2.fillRect(canvas2.width / 2 - 300, canvas2.height / 2 - 180, 600, 360);
+                    context2.fillStyle = colors.white;
+                    context2.globalAlpha = 1;
+
+                    context2.font = '28px sans-serif'; // md
+                    context2.fillText('Tips', canvas2.width / 2, 220);
+                    context2.font = '16px sans-serif'; // sm
+                    let y = 280;
+                    context2.fillText('You have died, for now.', canvas2.width / 2, y += 20);
+                    context2.fillText(`Collect ${respawnEnergyCost} souls to return to the physical world!`, canvas2.width / 2, y += 20);
+
+                    context2.fillText('Press <Space> to proceed', canvas2.width / 2, 440);
+                }
+                if (tutUpgrade && tutIsShown) {
+                    context2.globalAlpha = 0.8;
+                    context2.fillStyle = colors.black;
+                    context2.fillRect(canvas2.width / 2 - 300, canvas2.height / 2 - 180, 600, 360);
+                    context2.fillStyle = colors.white;
+                    context2.globalAlpha = 1;
+
+                    context2.font = '28px sans-serif'; // md
+                    context2.fillText('Tips', canvas2.width / 2, 220);
+                    context2.font = '16px sans-serif'; // sm
+                    let y = 280;
+                    context2.fillText('You have entered the spectral world through collecting an upgrade.', canvas2.width / 2, y += 20);
+                    context2.fillText(`Collect ${respawnEnergyCost} souls to return to the physical world with your new gun!`, canvas2.width / 2, y += 20);
+                    y += 20
+                    context2.fillText(`While you are at it, collect more souls to reduce the clutter!`, canvas2.width / 2, y += 20);
+
+                    context2.fillText('Press <Space> to proceed', canvas2.width / 2, 440);
                 }
 
                 // pause
@@ -1562,7 +1621,7 @@ async function start() {
             }
 
             if (gameIsOver) {
-                // if (true) {
+                // game over screen
                 gameIsOver++;
 
                 context2.fillStyle = colors.black;
@@ -1618,16 +1677,16 @@ async function start() {
 
 
                 context2.textAlign = 'center';
-                context2.fillText(`Collect ${energy}/${respawnEnergyCost} souls to respawn.`, canvas2.width / 2, 560);
+                context2.fillText(`Collect ${energy}/${respawnEnergyCost} souls to revive.`, canvas2.width / 2, 560);
                 context2.fillStyle = ((Date.now() % 500) > 250 ? colors.orange : colors.white);
-                context2.fillText('Press <Enter> to restart', canvas2.width / 2, 500);
+                context2.fillText('Press <Space> to restart', canvas2.width / 2, 500);
             }
 
             if (gameIsPaused) {
                 context2.fillStyle = ((Date.now() % 500) > 250 ? colors.orange : colors.white);
                 context2.textAlign = 'center';
                 context2.font = '16px sans-serif'; // sm
-                context2.fillText('Game Paused', canvas2.width / 2, 480);
+                context2.fillText('Game Paused', canvas2.width / 2, canvas2.height / 2);
             }
 
 

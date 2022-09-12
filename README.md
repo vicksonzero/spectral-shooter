@@ -153,6 +153,11 @@ Language
 
 ## Public testing
 
+- [ ] fire blink when respawning
+- [x] pause screen while showing hints
+- [x] use space instead of enter
+- [ ] add sound to countdown
+
 
 ## Content 2
 - [ ] Arena transition
