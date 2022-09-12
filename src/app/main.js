@@ -408,15 +408,18 @@ async function start() {
             anchor: { x: 0.5, y: 0.5 },
 
             render() {
-                const yy = Math.sin(fixedGameTime % 500 / 500 * 2 * Math.PI) * 1;
+                let xx = 0;
+                let yy = Math.sin(fixedGameTime % 500 / 500 * 2 * Math.PI) * 1;
                 // @ifdef SPRITE_IMAGE
                 if (this.image) {
-                    if (currentDimension == PHYSICAL_DIMENSION && this.returnHp - this.hp > 180) {
-                        context.globalAlpha = 0.3 + 0.7 * (this.hp / this.returnHp);
+                    if (this.returnHp - this.hp > 180) {
+                        if (currentDimension == PHYSICAL_DIMENSION) context.globalAlpha = 0.3 + 0.7 * (this.hp / this.returnHp);
+                    } else {
+                        xx = Math.sign((fixedGameTime % 100) - 50) * 1;
                     }
                     context.drawImage(
                         this.image,
-                        0,
+                        xx,
                         yy,
                         this.image.width,
                         this.image.height
@@ -833,6 +836,12 @@ async function start() {
                 tutProgress++;
                 nextSpawnTick = fixedGameTime + 500;
                 nextWaveTime = fixedGameTime + waves[waveID][0] * 1000;
+            }
+            if (tutUpgrade) {
+                tutUpgrade = -1;
+            }
+            if (tutDeath) {
+                tutDeath = -1;
             }
             input.s = 0;
         }
@@ -1578,7 +1587,7 @@ async function start() {
                 }
 
                 // tut popups
-                if (tutDeath && tutIsShown) {
+                if (tutDeath == 1 && tutIsShown) {
                     context2.globalAlpha = 0.8;
                     context2.fillStyle = colors.black;
                     context2.fillRect(canvas2.width / 2 - 300, canvas2.height / 2 - 180, 600, 360);
@@ -1586,15 +1595,16 @@ async function start() {
                     context2.globalAlpha = 1;
 
                     context2.font = '28px sans-serif'; // md
-                    context2.fillText('Tips', canvas2.width / 2, 220);
+                    context2.fillText('Spectral Revive', canvas2.width / 2, 220);
                     context2.font = '16px sans-serif'; // sm
                     let y = 280;
                     context2.fillText('You have died, for now.', canvas2.width / 2, y += 20);
-                    context2.fillText(`Collect ${respawnEnergyCost} souls to return to the physical world!`, canvas2.width / 2, y += 20);
+                    context2.fillText(`Collect ${respawnEnergyCost} souls to return to the physical world.`, canvas2.width / 2, y += 20);
+                    context2.fillText(`You can also collide into enemies to knock their soul out!`, canvas2.width / 2, y += 20);
 
                     context2.fillText('Press <Space> to proceed', canvas2.width / 2, 440);
                 }
-                if (tutUpgrade && tutIsShown) {
+                if (tutUpgrade == 1 && tutIsShown) {
                     context2.globalAlpha = 0.8;
                     context2.fillStyle = colors.black;
                     context2.fillRect(canvas2.width / 2 - 300, canvas2.height / 2 - 180, 600, 360);
@@ -1602,13 +1612,14 @@ async function start() {
                     context2.globalAlpha = 1;
 
                     context2.font = '28px sans-serif'; // md
-                    context2.fillText('Tips', canvas2.width / 2, 220);
+                    context2.fillText('Spectral Dash', canvas2.width / 2, 220);
                     context2.font = '16px sans-serif'; // sm
                     let y = 280;
                     context2.fillText('You have entered the spectral world through collecting an upgrade.', canvas2.width / 2, y += 20);
                     context2.fillText(`Collect ${respawnEnergyCost} souls to return to the physical world with your new gun!`, canvas2.width / 2, y += 20);
                     y += 20
-                    context2.fillText(`While you are at it, collect more souls to reduce the clutter!`, canvas2.width / 2, y += 20);
+                    context2.fillText(`While you are at it, collect more souls to reduce the clutter.`, canvas2.width / 2, y += 20);
+                    context2.fillText(`You can also collide into enemies to knock their soul out!`, canvas2.width / 2, y += 20);
 
                     context2.fillText('Press <Space> to proceed', canvas2.width / 2, 440);
                 }

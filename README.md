@@ -153,7 +153,7 @@ Language
 
 ## Public testing
 
-- [ ] fire blink when respawning
+- [x] fire blink when respawning
 - [x] pause screen while showing hints
 - [x] use space instead of enter
 - [ ] add sound to countdown
