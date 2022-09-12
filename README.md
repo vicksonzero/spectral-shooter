@@ -133,7 +133,7 @@ Language
   - [x] Click to shoot (Until 5 kills)
   - [x] Collect for better weapons (Until 2nd box spawns)
   - [x] Aim for high-score!
-- [ ] Score, multiplier, timer
+- [x] Score, multiplier, timer
 - [x] Wave 5 with Shielded as boss
 
 ## Content 1
@@ -146,7 +146,7 @@ Language
   - [x] vfx for eat
   - [x] Upgrade box sprite
 - [x] vfx for spectral dash
-- [ ] vfx for blurring and glowing
+- [x] vfx for blurring and glowing
   - [x] glowing melee enemy
 - [x] vfx for enemy spawn
 
@@ -165,11 +165,11 @@ Language
 - [ ] Enemies
   - [ ] spread shot enemies
 - [ ] Guns
-- [ ] Add codenames like "Bringer of hell", "Deader get deader"
+- [ ] Add code-names like "Bringer of hell", "Deader get deader"
 - [x] Pause game
 - [x] Mute sound
 - [x] Local high score
-- [ ] Explain story and scoring in-game
+- [x] Explain story and scoring in-game
 
 ## Minimize
 
