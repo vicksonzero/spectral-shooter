@@ -10,12 +10,14 @@ export async function loadImages() {
         shooterEnemyPhysical: decompress(imageList.tile080, colors.darkGray),
         shooterEnemySpectral: decompress(imageList.tile080, colors.gray),
 
-        ghostFirePhysical: decompress(imageList.tile505, colors.lightGray),
-        ghostFireSpectral: decompress(imageList.tile505, colors.blue),
+        ghostFirePhysical: decompress(imageList.tile505, colors.white),
+        ghostFireSpectral: decompress(imageList.tile505, colors.lightGray),
+        ghostFireZero: decompress(imageList.tile505, colors.zero),
 
         playerPhysical: decompress(imageList.tile077, colors.darkGray),
         playerSpectral: decompress(imageList.tile077, colors.lightGray),
         playerSpectralDash: decompress(imageList.tile077, colors.blue),
+        playerZero: decompress(imageList.tile077, colors.zero),
 
         // boxWhite: decompress(imageList.tile121, colors.white),
         // boxDarkGray: decompress(imageList.tile121, colors.lightGray),

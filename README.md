@@ -4,6 +4,22 @@ Walk a fine line between the Spectral Dimension and Physical Dimension in this T
 Made for the js13k game jam 2022
 
 
+# About
+
+Undeads don't actually die. 
+They just go into the spectral world, and resurrect after some time.
+
+You are an undead hunter, gifted with the ability to move 
+between the physical world, and the spectral world.
+Dive into the spectral world to kill them for good.
+
+Move around using WASD, ZQSD, or ← ↓ ↑ →
+Aim with mouse and shoot by holding left click.
+
+If you ever find yourself dead, 
+just collect some souls from the spectral world to revive.
+
+
 
 # Credits
 

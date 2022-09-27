@@ -9,6 +9,7 @@ import { colors } from './colors';
 
 import { loadImages } from './images';
 import { ArcadeAudio } from './audio';
+import { CanvasRenderingContext2D } from 'canvas';
 
 
 async function start() {
@@ -409,6 +410,7 @@ async function start() {
             anchor: { x: 0.5, y: 0.5 },
 
             render() {
+
                 let xx = 0;
                 let yy = Math.sin(fixedGameTime % 500 / 500 * 2 * Math.PI) * 1;
                 // @ifdef SPRITE_IMAGE
@@ -418,6 +420,13 @@ async function start() {
                     } else {
                         xx = Math.sign((fixedGameTime % 100) - 50) * 1;
                     }
+                    renderGlow(context,
+                        (currentDimension == SPECTRAL_DIMENSION ? colors.blue : colors.shadowGray), 6,
+                        images.ghostFireZero,
+                        xx,
+                        yy,
+                    );
+                    context.globalCompositeOperation = 'lighten';
                     context.drawImage(
                         this.image,
                         xx,
@@ -425,7 +434,7 @@ async function start() {
                         this.image.width,
                         this.image.height
                     );
-                    context.globalAlpha = 1;
+                    context.globalCompositeOperation = 'source-over';
                 }
                 // @endif
 
@@ -489,7 +498,8 @@ async function start() {
                 // @ifdef SPRITE_IMAGE
                 if (this.image) {
                     // type 1
-                    context.globalAlpha = (this.ttl / this.ttl2) * 0.7;
+                    context.globalCompositeOperation = 'lighter';
+                    context.globalAlpha = (this.ttl / this.ttl2) * 0.5;
                     context.drawImage(
                         this.image,
                         0,
@@ -498,6 +508,7 @@ async function start() {
                         this.image.height
                     );
                     context.globalAlpha = 1;
+                    context.globalCompositeOperation = 'source-over';
                 }
                 // @endif
 
@@ -759,6 +770,20 @@ async function start() {
                 tutIsShown = 1;
             }
         }
+    }
+
+    function renderGlow(/** @type {CanvasRenderingContext2D}*/ctx, color, blur, imageAdd, x, y) {
+        // bg glow
+        ctx.save();
+        ctx.globalCompositeOperation = 'hard-light';
+        ctx.shadowBlur = blur;
+        ctx.shadowColor = color;
+        // ctx.globalAlpha *= 0.5;
+        ctx.drawImage(imageAdd, x, y);
+        ctx.drawImage(imageAdd, x, y);
+        ctx.restore();
+        ctx.shadowBlur = 0;
+        ctx.globalCompositeOperation = 'source-over';
     }
 
     // spawnBox(canvas.width / 2, canvas.height / 2, MAIN_SHOTGUN); // testing
@@ -1394,18 +1419,6 @@ async function start() {
                 context.globalAlpha = 1;
             }
 
-            // player bg glow
-            const gradient2 = context.createRadialGradient(
-                player.x, player.y, 0,
-                player.x, player.y, 20);
-            gradient2.addColorStop(0, '#ffffff55');
-            gradient2.addColorStop(0.7, '#ffffff11');
-            gradient2.addColorStop(1, '#ffffff00');
-            context.beginPath();
-            context.arc(player.x, player.y, 100, 0, 2 * Math.PI);
-            context.fillStyle = gradient2;
-            context.fill();
-
             // render all entities
             [
                 effectsPool,
@@ -1413,7 +1426,7 @@ async function start() {
                 playerBulletPool,
                 enemyBulletPool,
             ].forEach(e => {
-                if (e != player || currentDimension == PHYSICAL_DIMENSION || currentDimension == SPECTRAL_DIMENSION) e.render();
+                if (e != player) e.render();
 
                 // draw a bar for respawning spectral entities
                 if (e.returnHp - e.hp < 180) {
@@ -1424,6 +1437,7 @@ async function start() {
                     context.fillRect(e.x - e.width / 2 | 0, e.y + 12 | 0, e.width * (180 - e.returnHp + e.hp) / 180, 2);
                 }
             });
+
 
 
             if (currentDimension == BETWEEN_DIMENSION1) {
@@ -1440,7 +1454,15 @@ async function start() {
                 const ww = player.image.width + 10000 * progress;
                 const hh = player.image.height * (1 - progress);
                 context.drawImage(player.image, player.x - ww / 2, player.y - hh / 2, ww, hh);
-            } else {
+            } else if (currentDimension == PHYSICAL_DIMENSION || currentDimension == SPECTRAL_DIMENSION) {
+                renderGlow(context,
+                    (currentDimension == SPECTRAL_DIMENSION ? colors.blue : colors.white), 4,
+                    images.playerZero,
+                    player.x - player.image.width / 2,
+                    player.y - player.image.height / 2
+                );
+                context.drawImage(player.image, player.x - player.image.width / 2, player.y - player.image.height / 2);
+
                 const pointer = getPointer();
                 const xx = player.x;
                 const yy = player.y;

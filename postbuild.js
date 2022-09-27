@@ -17,6 +17,7 @@ output.on('close', function () {
   const left = MAX - bytes;
   if (bytes > MAX) {
     console.error(`Size overflow: ${bytes} bytes (${percent}%)`)
+    console.log(`               ${('' + (-left)).padStart(5, ' ')} bytes over.`)
   } else if (bytes / MAX > 0.8) {
     console.log(`Size: ${('' + bytes).padStart(5, ' ')} bytes (${percent}%)`)
     console.log(`      ${('' + left).padStart(5, ' ')} bytes left.`)
